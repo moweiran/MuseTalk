@@ -18,6 +18,10 @@ os.makedirs(AUDIO_DIR, exist_ok=True)
 #  创建Avatar实例
 avatar_instance = None
 
+@app.on_event("startup")
+async def startup_event():
+    """应用启动时初始化Avatar"""
+    initialize_avatar()
 
 def initialize_avatar():
     """初始化Avatar实例"""
@@ -59,6 +63,10 @@ def inference(url:str, filename:str = None):
     """
     下载音频文件的API接口
     """
+    """
+    使用预初始化的Avatar实例进行推理
+    """
+    global avatar_instance
     try:
         if filename is None:
             filename = get_filename_from_url(url)
@@ -124,6 +132,4 @@ def download_audio(url:str, filename:str = None):
         raise HTTPException(status_code=500, detail=f"下载失败: {str(e)}")
 
 if __name__ == "__main__":
-    """应用启动时初始化Avatar"""
-    initialize_avatar()
     uvicorn.run(app, host="0.0.0.0", port=5001)
