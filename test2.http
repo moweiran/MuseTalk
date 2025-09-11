@@ -1,0 +1,28 @@
+@apiHost = http://183.63.45.52:5001
+
+GET {{apiHost}}/hello HTTP/1.1
+Content-Type: application/json; charset=UTF-8
+
+###
+GET {{apiHost}}/download-audio?url=https://disk.sample.cat/samples/wav/suzume_no_tojimari.wav HTTP/1.1
+Content-Type: application/json; charset=UTF-8
+
+###suzume_no_tojimari
+GET {{apiHost}}/inference?url=https://disk.sample.cat/samples/wav/suzume_no_tojimari.wav HTTP/1.1
+Content-Type: application/json; charset=UTF-8
+
+### audio
+GET {{apiHost}}/inference?url=https://icommu-prod-1326448221.cos.ap-guangzhou.myqcloud.com/ai-voice-asserts/c2e281a769d34c77be7b57cd8769323e.mp3 HTTP/1.1
+Content-Type: application/json; charset=UTF-8
+
+### audio
+GET {{apiHost}}/inference?url=https://icommu-dev-1326448221.cos.ap-guangzhou.myqcloud.com/ai-voice-asserts/output_audio.wav HTTP/1.1
+Content-Type: application/json; charset=UTF-8
+
+### audio
+GET {{apiHost}}/inference?url=https://icommu-prod-1326448221.cos.ap-guangzhou.myqcloud.com/ai-voice-asserts/371c627a53c24a5c847252e4ff158c18.mp3 HTTP/1.1
+Content-Type: application/json; charset=UTF-8
+
+### audio
+GET {{apiHost}}/inference?url=https://icommu-prod-1326448221.cos.ap-guangzhou.myqcloud.com/asserts/267697d44b41464e9028727affdb1dd0.mp3 HTTP/1.1
+Content-Type: application/json; charset=UTF-8
