@@ -357,7 +357,7 @@ class Avatar:
             # 可用
             # stream = f"ffmpeg -re -framerate 25 -f image2 -i {self.avatar_path}/tmp/%08d.png -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -pix_fmt yuv420p -g 30 -b:v 2048k -f flv -flvflags no_duration_filesize rtmp://43.139.227.110:1935/live/livestream"
             # 带音频
-            # 在您的 inference 方法中替换推流命令
+            # 在您的 inference 方法中替换推流命令,图片，音频流都可以
             stream = f"ffmpeg -re -framerate 25 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -pix_fmt yuv420p -g 30 -b:v 2048k -c:a aac -b:a 128k -ar 44100 -ac 2 -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize rtmp://43.139.227.110:1935/live/livestream"
             # stream = f"ffmpeg -re -framerate 25 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -pix_fmt yuv420p -g 30 -b:v 2048k -f flv -flvflags no_duration_filesize rtmp://43.139.227.110:1935/live/livestream"
             # stream = f"ffmpeg -re -framerate 25 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -pix_fmt yuv420p -g 30 -b:v 2048k -c:a aac -ar 44100 -ac 2 -map 0:v -map 1:a -shortest -f flv -flvflags no_duration_filesize rtmp://43.139.227.110:1935/live/livestream"

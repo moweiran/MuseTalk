@@ -1,0 +1,21 @@
+volumes:
+  nginx-config-volume:
+
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: ./dockerfile
+    container_name: srs-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - nginx-config-volume:/etc/nginx/conf.d
+    networks:
+      - srs-network
+
+networks:
+  srs-network:
+    driver: bridge # 改为内部网络
+    # external: true

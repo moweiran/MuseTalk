@@ -1,0 +1,24 @@
+services:
+  srs:
+    image: registry.cn-hangzhou.aliyuncs.com/ossrs/srs:5
+    container_name: srs
+    ports:
+      - "1935:1935"
+      - "8080:8080"
+      - "1985:1985"
+      # - "1443:1443"  # HTTPS port for RTMPS
+    volumes:
+      # - srs_conf:/usr/local/srs/conf
+      - ./srs.conf:/usr/local/srs/conf/srs.conf:ro
+      # - ./srs.crt:/usr/local/srs/conf/srs.crt:ro
+      # - ./srs.key:/usr/local/srs/conf/srs.key:ro
+      # - ./srs.conf:/usr/local/srs/conf/srs.conf:ro
+      # - ./icommu.cn_bundle.crt:/usr/local/srs/conf/icommu.cn_bundle.crt:ro
+      # - ./icommu.cn.key:/usr/local/srs/conf/icommu.cn.key:ro
+volumes:
+  srs_conf:
+
+networks:
+  srs-network:
+    driver: bridge # 改为内部网络
+    # external: true
