@@ -300,7 +300,7 @@ class Avatar:
             self.idx = self.idx + 1
 
     @torch.no_grad()
-    def inference(self, audio_path, out_vid_name, fps, skip_save_images):
+    def inference(self, audio_path, out_vid_name, fps, skip_save_images, rtmp_url):
         os.makedirs(self.avatar_path + '/tmp', exist_ok=True)
         print("start inference")
         ############################################## extract audio feature ##############################################
@@ -356,7 +356,8 @@ class Avatar:
             # stream = f"ffmpeg -re -framerate 25 -f image2 -i {self.avatar_path}/tmp/%08d.png -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -pix_fmt yuv420p -g 30 -b:v 2048k -f flv -flvflags no_duration_filesize rtmp://43.139.227.110:1935/live/livestream"
             # 可用 带音频
             # 在您的 inference 方法中替换推流命令,图片，音频流都可以
-            stream = f"ffmpeg -re -framerate 25 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -pix_fmt yuv420p -g 30 -b:v 2048k -c:a aac -b:a 128k -ar 44100 -ac 2 -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize rtmps://rtmp.icommu.cn/live/livestream"
+            # rtmps://rtmp.icommu.cn/live/livestream test app key and secret
+            stream = f"ffmpeg -re -framerate 25 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -pix_fmt yuv420p -g 30 -b:v 2048k -c:a aac -b:a 128k -ar 44100 -ac 2 -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize {rtmp_url}"
             os.system(stream)
             # self.start_background_stream(audio_path)
             print("streaming end")
@@ -380,12 +381,8 @@ class Avatar:
             os.remove(f"{self.avatar_path}/temp.mp4")
             shutil.rmtree(f"{self.avatar_path}/tmp")
             print(f"result is save to {output_vid}")
-            # stream = f"ffmpeg -re -stream_loop -1 -i {output_vid} -c:v libx264 -preset ultrafast -c:a aac -ar 44100 -ac 2 -f flv rtmps://rtmp.icommu.cn/live/livestream"
-            # Input #0, mov,mp4,m4a,3gp,3g2,mj2, from './results/v15/avatars/avator_1/vid_output/audio_0.mp4':
-            # rtmps://rtmp.icommu.cn/live/livestream: Input/output error
-            stream = f"ffmpeg -re -stream_loop -1 -i {output_vid} -c copy -f flv rtmps://rtmp.icommu.cn/live/livestream"
-            # ffmpeg -re -stream_loop -1 -i ./results/v15/avatars/avator_1/vid_output/audio_0.mp4 -c copy -f flv rtmps://rtmp.icommu.cn/live/livestream
-            # ffmpeg -re -stream_loop -1 -i ./results/v15/avatars/avator_1/vid_output/audio_0.mp4 -c copy -f flv rtmp://43.139.227.110:1935/live/livestream
+            # rtmps://rtmp.icommu.cn/live/livestream
+            stream = f"ffmpeg -re -stream_loop -1 -i {output_vid} -c copy -f flv {rtmp_url}"
             os.system(stream)
         print("\n")
 

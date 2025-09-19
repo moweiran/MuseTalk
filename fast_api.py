@@ -63,7 +63,7 @@ def get_filename_from_url(url):
     return filename
 
 @app.get("/inference")
-def inference(url:str, filename:str = None):
+def inference(url:str, rtmp_url:str,filename:str = None):
     """
     下载音频文件的API接口
     """
@@ -104,7 +104,13 @@ def inference(url:str, filename:str = None):
             
         print("Inferring using:", filepath)
         
-        avatar_instance.inference(filepath, "audio_0", 25, False)
+        avatar_instance.inference(
+            filepath, 
+            "audio_0", 
+            25, 
+            False, 
+            rtmp_url
+        )
         print(f"end of hello {datetime.now()}")
         return {"message": f"推理完成! filename: {filename} at {datetime.now()}"}
     except Exception as e:
