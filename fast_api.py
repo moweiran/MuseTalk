@@ -27,7 +27,7 @@ async def startup_event():
     initialize_avatar()
     
 
-def initialize_avatar(avatar_id:str = "yongen"):
+def initialize_avatar(avatar_id:str = "mofei"):
     """初始化Avatar实例"""
     global avatar_instance
     if avatar_instance is None:
@@ -37,7 +37,7 @@ def initialize_avatar(avatar_id:str = "yongen"):
             video_path=f"data/video/{avatar_id}.mp4",
             bbox_shift=0,
             batch_size=20,
-            preparation=True)
+            preparation=False)
         print("Avatar实例初始化完成")
     return avatar_instance
 
