@@ -67,7 +67,12 @@ def train_avatar(avatar:str):
     """
     训练Avatar
     """
-    initialize_avatar(avatar_id=avatar)
+    Avatar(
+        avatar_id=avatar,
+        video_path=f"data/video/{avatar}.mp4",
+        bbox_shift=0,
+        batch_size=20,
+        preparation=True)
 
 @app.get("/inference")
 def inference(url:str, rtmp_url:str,filename:str = None):
