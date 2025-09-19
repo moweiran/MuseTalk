@@ -1,5 +1,8 @@
 from fastapi import FastAPI, HTTPException
 import uvicorn
+import asyncio
+import signal
+import sys
 from MuseTalk import MuseTalk_RealTime
 from scripts.realtime_inference2 import Avatar
 from datetime import datetime
@@ -22,6 +25,7 @@ avatar_instance = None
 async def startup_event():
     """应用启动时初始化Avatar"""
     initialize_avatar()
+    
 
 def initialize_avatar():
     """初始化Avatar实例"""
@@ -130,6 +134,26 @@ def download_audio(url:str, filename:str = None):
         return {"message": "音频文件下载成功", "filename": filename}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"下载失败: {str(e)}")
+    
+    # Graceful shutdown handling
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Application shutdown handler"""
+    print("Shutting down gracefully...")
+    # Add any cleanup code here
+
+def signal_handler(sig, frame):
+    print('Received interrupt signal. Shutting down...')
+    sys.exit(0)
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=5001)
+     # Handle interrupt signals
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    uvicorn.run(
+        "fast_api:app", 
+        host="0.0.0.0", 
+        port=5001,
+        reload=False,  # Set to False for production
+        workers=1      # Adjust based on your needs
+    )

@@ -1,0 +1,18 @@
+services:
+  develop:
+    image: icommu-registry.tencentcloudcr.com/icommu-dev/icommu-dev:dev
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+      - PATH = /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      - ONNXRUNTIME_BUILD_FROM_SOURCE=1
+      - ONNXRUNTIME_DOWNLOAD_SKIP=1
+      - ONNXRUNTIME_HOME=/usr/local/onnxruntime
+      - DEPLOY_ENV=test-tencent
+    extra_hosts:
+      - "digitalhuman.richinfo.cn:121.15.167.250"
+    # entrypoint: ["/usr/local/bin/docker-entrypoint.sh"]
+    entrypoint: ["docker-entrypoint.sh"]
+    command: ["npm", "run", "start:prod"]
