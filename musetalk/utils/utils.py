@@ -53,6 +53,7 @@ def datagen(
     delay_frame=0,
     device="cuda:0",
 ):
+    print("数据生成器启动")
     whisper_batch, latent_batch = [], []
     for i, w in enumerate(whisper_chunks):
         idx = (i+delay_frame)%len(vae_encode_latents)

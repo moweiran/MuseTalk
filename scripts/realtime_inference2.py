@@ -296,6 +296,7 @@ class Avatar:
             combine_frame = get_image_blending(ori_frame,res_frame,bbox,mask,mask_crop_box)
 
             if skip_save_images is False:
+                print(f"Saving image {self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png")
                 cv2.imwrite(f"{self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png", combine_frame)
             self.idx = self.idx + 1
 
@@ -325,6 +326,7 @@ class Avatar:
         # Create a sub-thread and start it
         process_thread = threading.Thread(target=self.process_frames, args=(res_frame_queue, video_num, skip_save_images))
         process_thread.start()
+        print(f"processing end")
 
         gen = datagen(whisper_chunks,
                      self.input_latent_list_cycle,

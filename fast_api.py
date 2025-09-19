@@ -101,15 +101,6 @@ def inference(url:str, rtmp_url:str,filename:str = None):
                 file.write(chunk)
                 
         print(f"end of download-audio {filepath} at {datetime.now()}")
-        # avatar_id = "avator_1"
-        # video_path = "data/video/yongen.mp4"
-        # avatar = Avatar(
-        #     avatar_id="avator_1",
-        #     video_path=video_path,
-        #     bbox_shift=0,
-        #     batch_size=20,
-        #     preparation=False)
-        # 使用预初始化的Avatar实例
         if avatar_instance is None:
             print("avatar_instance is None 初始化Avatar实例...")
             avatar_instance = initialize_avatar()
