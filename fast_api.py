@@ -157,9 +157,7 @@ if __name__ == "__main__":
     # signal.signal(signal.SIGINT, signal_handler)
     # signal.signal(signal.SIGTERM, signal_handler)
     uvicorn.run(
-        "fast_api:app", 
+        app, 
         host="0.0.0.0", 
-        port=5001,
-        # reload=False,  # Set to False for production
-        # workers=1      # Adjust based on your needs
+        port=5001
     )
