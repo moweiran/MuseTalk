@@ -27,17 +27,17 @@ async def startup_event():
     initialize_avatar()
     
 
-def initialize_avatar():
+def initialize_avatar(avatar_id:str = "yongen"):
     """初始化Avatar实例"""
     global avatar_instance
     if avatar_instance is None:
         print("初始化Avatar实例...")
         avatar_instance = Avatar(
-            avatar_id="avator_1",
-            video_path="data/video/yongen.mp4",
+            avatar_id=avatar_id,
+            video_path=f"data/video/{avatar_id}.mp4",
             bbox_shift=0,
             batch_size=20,
-            preparation=False)
+            preparation=True)
         print("Avatar实例初始化完成")
     return avatar_instance
 
@@ -61,6 +61,13 @@ def get_filename_from_url(url):
     # 解码URL编码的字符
     filename = unquote(filename)
     return filename
+
+@app.get("/train_avatar")
+def train_avatar(avatar:str):
+    """
+    训练Avatar
+    """
+    initialize_avatar(avatar_id=avatar)
 
 @app.get("/inference")
 def inference(url:str, rtmp_url:str,filename:str = None):
@@ -106,10 +113,10 @@ def inference(url:str, rtmp_url:str,filename:str = None):
         
         avatar_instance.inference(
             filepath, 
-            "audio_0", 
-            25, 
-            False, 
-            rtmp_url
+            out_vid_name=None,
+            fps=25, 
+            skip_save_images=False, 
+            rtmp_url=rtmp_url
         )
         print(f"end of hello {datetime.now()}")
         return {"message": f"推理完成! filename: {filename} at {datetime.now()}"}
