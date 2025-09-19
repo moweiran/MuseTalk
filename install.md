@@ -122,3 +122,6 @@ ps aux | grep fast_api.py
 # Kill it using the process ID
 
 kill -9 <process_id>
+
+# 查看log
+tail -f fastapi.log
