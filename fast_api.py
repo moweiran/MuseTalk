@@ -142,24 +142,24 @@ def download_audio(url:str, filename:str = None):
         raise HTTPException(status_code=500, detail=f"下载失败: {str(e)}")
     
     # Graceful shutdown handling
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Application shutdown handler"""
-    print("Shutting down gracefully...")
-    # Add any cleanup code here
+# @app.on_event("shutdown")
+# async def shutdown_event():
+#     """Application shutdown handler"""
+#     print("Shutting down gracefully...")
+#     # Add any cleanup code here
 
-def signal_handler(sig, frame):
-    print('Received interrupt signal. Shutting down...')
-    sys.exit(0)
+# def signal_handler(sig, frame):
+#     print('Received interrupt signal. Shutting down...')
+#     sys.exit(0)
 
 if __name__ == "__main__":
      # Handle interrupt signals
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
+    # signal.signal(signal.SIGINT, signal_handler)
+    # signal.signal(signal.SIGTERM, signal_handler)
     uvicorn.run(
         "fast_api:app", 
         host="0.0.0.0", 
         port=5001,
-        reload=False,  # Set to False for production
-        workers=1      # Adjust based on your needs
+        # reload=False,  # Set to False for production
+        # workers=1      # Adjust based on your needs
     )

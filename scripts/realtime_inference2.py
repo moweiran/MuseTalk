@@ -302,7 +302,7 @@ class Avatar:
     @torch.no_grad()
     def inference(self, audio_path, out_vid_name, fps, skip_save_images, rtmp_url):
         os.makedirs(self.avatar_path + '/tmp', exist_ok=True)
-        print("start inference")
+        print("start inference self.skip_save_images = {self.skip_save_images} rtmp_url = {rtmp_url}")
         ############################################## extract audio feature ##############################################
         start_time = time.time()
         # Extract audio features
