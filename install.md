@@ -100,6 +100,7 @@ conda install -c conda-forge ffmpeg
 ```
 
 
+# macos 配置hosts
 sudo vim /etc/hosts
 
 121.15.167.250 digitalhuman.richinfo.cn
