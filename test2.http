@@ -1,5 +1,5 @@
-# @apiHost = http://183.63.45.52:5001
-@apiHost = http://digitalhuman.richinfo.cn
+# @apiHost = http://digitalhuman.richinfo.cn
+@apiHost = http://183.63.45.52:5001
 
 GET {{apiHost}}/hello HTTP/1.1
 Content-Type: application/json; charset=UTF-8

@@ -274,7 +274,7 @@ class Avatar:
         print("preparing data materials done.")
 
     def process_frames(self, res_frame_queue, video_len, skip_save_images):
-        print(video_len)
+        print(f'video_len={video_len} skip_save_images={skip_save_images}')
         while True:
             if self.idx >= video_len - 1:
                 break
@@ -294,16 +294,17 @@ class Avatar:
             mask = self.mask_list_cycle[self.idx % (len(self.mask_list_cycle))]
             mask_crop_box = self.mask_coords_list_cycle[self.idx % (len(self.mask_coords_list_cycle))]
             combine_frame = get_image_blending(ori_frame,res_frame,bbox,mask,mask_crop_box)
+            print(f"Saving image {self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png")
 
             if skip_save_images is False:
-                print(f"Saving image {self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png")
-                cv2.imwrite(f"{self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png", combine_frame)
+                output_path = f"{self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png"
+                cv2.imwrite(output_path, combine_frame)
             self.idx = self.idx + 1
 
     @torch.no_grad()
     def inference(self, audio_path, out_vid_name, fps, skip_save_images, rtmp_url):
         os.makedirs(self.avatar_path + '/tmp', exist_ok=True)
-        print(f"start inference self.skip_save_images = {self.skip_save_images} rtmp_url = {rtmp_url}")
+        print(f"start inference self.skip_save_images = {self.skip_save_images} skip_save_images={skip_save_images} rtmp_url = {rtmp_url}")
         ############################################## extract audio feature ##############################################
         start_time = time.time()
         # Extract audio features
