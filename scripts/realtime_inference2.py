@@ -400,6 +400,7 @@ class Avatar:
             # subprocess.run(stream_cmd)
             print(f"streaming... avatar_path={self.avatar_path}  audio_path={audio_path} end")
             player.play(rtmp_url)
+            shutil.rmtree(f"{self.avatar_path}/tmp")
             
         else:
             print('Total process time of {} frames including saving images = {}s'.format(
