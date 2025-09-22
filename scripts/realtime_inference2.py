@@ -307,7 +307,7 @@ class Avatar:
     @torch.no_grad()
     def inference(self, audio_path, out_vid_name, fps, skip_save_images, rtmp_url):
         print(f"Starting pre-stream:")
-        player.play()
+        player.play(rtmp_url)
         
         os.makedirs(self.avatar_path + '/tmp', exist_ok=True)
         print(f"start inference self.skip_save_images = {self.skip_save_images} skip_save_images={skip_save_images} rtmp_url = {rtmp_url}")
@@ -398,7 +398,7 @@ class Avatar:
                 rtmp_url
             ]
             subprocess.run(stream_cmd)
-            player.play()
+            player.play(rtmp_url)
             
         else:
             print('Total process time of {} frames including saving images = {}s'.format(
