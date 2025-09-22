@@ -307,7 +307,10 @@ class Avatar:
     @torch.no_grad()
     def inference(self, audio_path, out_vid_name, fps, skip_save_images, rtmp_url):
         print(f"Starting pre-stream:")
-        self.start_stream(rtmp_url)
+        # self.start_stream(rtmp_url)
+        stop_event = threading.Event()
+        mp4_thread = threading.Thread(target=self.start_stream, args=(rtmp_url, stop_event))
+        mp4_thread.start()
         
         os.makedirs(self.avatar_path + '/tmp', exist_ok=True)
         print(f"start inference self.skip_save_images = {self.skip_save_images} skip_save_images={skip_save_images} rtmp_url = {rtmp_url}")
@@ -398,13 +401,12 @@ class Avatar:
                 '-flvflags', 'no_duration_filesize',
                 rtmp_url
             ]
-            self.current_stream_process = subprocess.Popen(stream_cmd)
-            time.sleep(2)  # 等待流稳定
-            self.stop_current_stream()
+            stop_event.set()
+            mp4_thread.join()
+            subprocess.run(stream_cmd)
             # self.start_background_stream(audio_path)
             print("streaming end")
             print(f"Starting post-stream:")
-            self.start_stream(rtmp_url)
             
         else:
             print('Total process time of {} frames including saving images = {}s'.format(
@@ -429,27 +431,12 @@ class Avatar:
             stream = f"ffmpeg -re -stream_loop -1 -i {output_vid} -c copy -f flv {rtmp_url}"
             os.system(stream)
         print("\n")
-    
-    def stop_current_stream(self):
-        """
-        停止当前正在播放的流
-        """
-        with self.stream_lock:
-            if self.current_stream_process and self.current_stream_process.poll() is None:
-                self.current_stream_process.terminate()
-                try:
-                    self.current_stream_process.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    self.current_stream_process.kill()
-                print("Stopped current stream")
-            self.current_stream_process = None
-            
-    def start_stream(self, rtmp_url:str):
+      
+    def start_stream(self, rtmp_url:str, stop_event):
         """
         开始播放MP4文件到RTMP服务器
         """
-        with self.stream_lock:
-            self.stop_current_stream()
+        while not stop_event.is_set():
             stream_cmd = [
                'ffmpeg',
                 '-re',
@@ -478,9 +465,10 @@ class Avatar:
             ]
             
             try:
-                self.current_stream_process = subprocess.Popen(stream_cmd)
+                process = subprocess.Popen(stream_cmd)
+                process.wait()
                 print(f"Started streaming default mp4 to {rtmp_url}")
-                time.sleep(2)  # 等待流稳定
+                # time.sleep(2)  # 等待流稳定
                 return True
             except Exception as e:
                 print(f"Failed to start MP4 streaming: {e}")
