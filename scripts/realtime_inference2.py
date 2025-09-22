@@ -376,7 +376,7 @@ class Avatar:
             stream_cmd = [
                 'ffmpeg',
                 '-re',
-                '-framerate', '30',
+                '-r', '30',
                 '-f', 'image2',
                 '-i', f'{self.avatar_path}/tmp/%08d.png',
                 '-i', audio_path,
@@ -407,6 +407,7 @@ class Avatar:
             # self.start_background_stream(audio_path)
             print("streaming end")
             print(f"Starting post-stream:")
+            # self.start_stream(rtmp_url)
             
         else:
             print('Total process time of {} frames including saving images = {}s'.format(
@@ -440,7 +441,7 @@ class Avatar:
             stream_cmd = [
                'ffmpeg',
                 '-re',
-                '-framerate', '30',
+                '-r', '30',
                 '-i', "./audio_0.mp4",
                 '-c:v', 'libx264',
                 '-preset', 'medium',
