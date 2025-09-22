@@ -7,6 +7,7 @@ class Player:
     def __init__(self):
         self.mp4_thread = None # 用于存储线程对象
         self.stop_event = threading.Event()  # 用于控制线程停止
+        self.current_rtmp_url = None
     
     def start_streaming(self, rtmp_url:str):
         """
@@ -54,8 +55,15 @@ class Player:
     def play(self, rtmp_url):
         # 检查是否已经有线程在运行
         if self.mp4_thread and self.mp4_thread.is_alive():
-            print("Streaming is already running. No new thread will be started.")
-            return
+            if self.current_rtmp_url == rtmp_url:
+                print("Streaming is already running with the same URL. No new thread will be started.")
+                return
+            else:
+                print("RTMP URL has changed. Stopping current stream...")
+                self.stop()  # 停止当前线程
+
+        # 更新当前的 rtmp_url
+        self.current_rtmp_url = rtmp_url
 
         # 如果没有线程在运行，则启动新的线程
         self.stop_event.clear()  # 确保停止事件未设置
@@ -71,6 +79,7 @@ class Player:
             print("Streaming stopped.")
         else:
             print("No streaming thread is running.")
+        self.current_rtmp_url = None  # 清空当前的 rtmp_url
             
     def inference(self, rtmp_url:str):
          # 启动播放
