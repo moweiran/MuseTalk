@@ -128,3 +128,5 @@ kill -9 <process_id>
 
 # 查看log
 tail -f fastapi.log
+
+http://183.63.45.52:5001/inference?url=https://icommu-prod-1326448221.cos.ap-guangzhou.myqcloud.com/asserts/1b829bdcf4f044e497af5a1d8070b6ac.mp3&rtmp_url=rtmps://rtmp.icommu.cn/live/livestream
