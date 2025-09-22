@@ -32,8 +32,7 @@ class Player:
             '-ac', '1',
             '-b:a', '64k',
             '-f', 'flv',
-            '-flvflags',
-            '-flags +low_delay',
+            '-flags', '+low_delay',
             rtmp_url,
         ]
         process = subprocess.Popen(stream_cmd)
