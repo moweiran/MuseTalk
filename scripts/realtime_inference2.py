@@ -18,6 +18,7 @@ from musetalk.utils.preprocessing import get_landmark_and_bbox, read_imgs
 from musetalk.utils.blending import get_image_prepare_material, get_image_blending
 from musetalk.utils.utils import load_all_model
 from musetalk.utils.audio_processor import AudioProcessor
+from player import Player
 
 import shutil
 import threading
@@ -25,6 +26,7 @@ import queue
 import time
 import subprocess
 
+player = Player()  # Global player instance
 
 def fast_check_ffmpeg():
     try:
@@ -57,8 +59,6 @@ def osmakedirs(path_list):
 class Avatar:
     def __init__(self, avatar_id, video_path, bbox_shift, batch_size, preparation):
         print("Initializing avatar...")
-        self.current_stream_process = None
-        self.stream_lock = threading.Lock()
         self.avatar_id = avatar_id
         self.video_path = video_path
         self.bbox_shift = bbox_shift
@@ -307,10 +307,7 @@ class Avatar:
     @torch.no_grad()
     def inference(self, audio_path, out_vid_name, fps, skip_save_images, rtmp_url):
         print(f"Starting pre-stream:")
-        # self.start_stream(rtmp_url)
-        stop_event = threading.Event()
-        mp4_thread = threading.Thread(target=self.start_stream, args=(rtmp_url, stop_event))
-        mp4_thread.start()
+        player.play()
         
         os.makedirs(self.avatar_path + '/tmp', exist_ok=True)
         print(f"start inference self.skip_save_images = {self.skip_save_images} skip_save_images={skip_save_images} rtmp_url = {rtmp_url}")
@@ -373,6 +370,7 @@ class Avatar:
             # stream = f"ffmpeg -re -framerate 25 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -pix_fmt yuv420p -g 30 -b:v 2048k -c:a aac -b:a 128k -ar 44100 -ac 2 -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize {rtmp_url}"
             # stream = f"ffmpeg -re -framerate 30 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset medium -profile:v baseline -level 3.1 -pix_fmt yuv420p -g 300 -keyint_min 60 -b:v 1200k -maxrate 1200k -bufsize 1800k -c:a aac -ar 16000 -ac 1 -b:a 64k -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize {rtmp_url}"
             # os.system(stream)
+            player.stop()
             stream_cmd = [
                 'ffmpeg',
                 '-re',
@@ -394,20 +392,13 @@ class Avatar:
                 '-ar', '16000',
                 '-ac', '1',
                 '-b:a', '64k',
-                '-map', '0:v:0',
-                '-map', '1:a:0',
                 '-shortest',
                 '-f', 'flv',
                 '-flvflags', 'no_duration_filesize',
                 rtmp_url
             ]
-            stop_event.set()
-            mp4_thread.join()
             subprocess.run(stream_cmd)
-            # self.start_background_stream(audio_path)
-            print("streaming end")
-            print(f"Starting post-stream:")
-            # self.start_stream(rtmp_url)
+            player.play()
             
         else:
             print('Total process time of {} frames including saving images = {}s'.format(
@@ -432,48 +423,6 @@ class Avatar:
             stream = f"ffmpeg -re -stream_loop -1 -i {output_vid} -c copy -f flv {rtmp_url}"
             os.system(stream)
         print("\n")
-      
-    def start_stream(self, rtmp_url:str, stop_event):
-        """
-        开始播放MP4文件到RTMP服务器
-        """
-        while not stop_event.is_set():
-            stream_cmd = [
-               'ffmpeg',
-                '-re',
-                '-r', '30',
-                '-i', "./audio_0.mp4",
-                '-c:v', 'libx264',
-                '-preset', 'medium',
-                '-profile:v', 'baseline',
-                '-level', '3.1',
-                '-pix_fmt', 'yuv420p',
-                '-g', '300',
-                '-keyint_min', '60',
-                '-b:v', '1200k',
-                '-maxrate', '1200k',
-                '-bufsize', '1800k',
-                '-c:a', 'aac',
-                '-ar', '16000',
-                '-ac', '1',
-                '-b:a', '64k',
-                '-map', '0:v:0',
-                '-map', '1:a:0',
-                '-shortest',
-                '-f', 'flv',
-                '-flvflags', 'no_duration_filesize',
-                rtmp_url
-            ]
-            
-            try:
-                process = subprocess.Popen(stream_cmd)
-                process.wait()
-                print(f"Started streaming default mp4 to {rtmp_url}")
-                # time.sleep(2)  # 等待流稳定
-                return True
-            except Exception as e:
-                print(f"Failed to start MP4 streaming: {e}")
-                return False
         
 
 if __name__ == "__main__":

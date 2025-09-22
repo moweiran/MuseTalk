@@ -1,3 +1,4 @@
+#### @apiHost = http://digitalhuman.richinfo.cn
 @apiHost = http://localhost:5001
 
 GET {{apiHost}}/hello HTTP/1.1
