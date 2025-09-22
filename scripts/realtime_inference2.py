@@ -57,6 +57,8 @@ def osmakedirs(path_list):
 class Avatar:
     def __init__(self, avatar_id, video_path, bbox_shift, batch_size, preparation):
         print("Initializing avatar...")
+        self.current_stream_process = None
+        self.stream_lock = threading.Lock()
         self.avatar_id = avatar_id
         self.video_path = video_path
         self.bbox_shift = bbox_shift
@@ -301,8 +303,12 @@ class Avatar:
                 cv2.imwrite(output_path, combine_frame)
             self.idx = self.idx + 1
 
+
     @torch.no_grad()
     def inference(self, audio_path, out_vid_name, fps, skip_save_images, rtmp_url):
+        print(f"Starting pre-stream:")
+        self.start_stream(rtmp_url, loop=True)
+        
         os.makedirs(self.avatar_path + '/tmp', exist_ok=True)
         print(f"start inference self.skip_save_images = {self.skip_save_images} skip_save_images={skip_save_images} rtmp_url = {rtmp_url}")
         ############################################## extract audio feature ##############################################
@@ -362,10 +368,43 @@ class Avatar:
             # rtmps://rtmp.icommu.cn/live/livestream test app key and secret
             # 测试用例
             # stream = f"ffmpeg -re -framerate 25 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -pix_fmt yuv420p -g 30 -b:v 2048k -c:a aac -b:a 128k -ar 44100 -ac 2 -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize {rtmp_url}"
-            stream = f"ffmpeg -re -framerate 30 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset medium -profile:v baseline -level 3.1 -pix_fmt yuv420p -g 300 -keyint_min 60 -b:v 1200k -maxrate 1200k -bufsize 1800k -c:a aac -ar 16000 -ac 1 -b:a 64k -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize {rtmp_url}"
-            os.system(stream)
+            # stream = f"ffmpeg -re -framerate 30 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset medium -profile:v baseline -level 3.1 -pix_fmt yuv420p -g 300 -keyint_min 60 -b:v 1200k -maxrate 1200k -bufsize 1800k -c:a aac -ar 16000 -ac 1 -b:a 64k -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize {rtmp_url}"
+            # os.system(stream)
+            stream_cmd = [
+                'ffmpeg',
+                '-re',
+                '-framerate', '30',
+                '-f', 'image2',
+                '-i', f'{self.avatar_path}/tmp/%08d.png',
+                '-i', audio_path,
+                '-c:v', 'libx264',
+                '-preset', 'medium',
+                '-profile:v', 'baseline',
+                '-level', '3.1',
+                '-pix_fmt', 'yuv420p',
+                '-g', '300',
+                '-keyint_min', '60',
+                '-b:v', '1200k',
+                '-maxrate', '1200k',
+                '-bufsize', '1800k',
+                '-c:a', 'aac',
+                '-ar', '16000',
+                '-ac', '1',
+                '-b:a', '64k',
+                '-map', '0:v:0',
+                '-map', '1:a:0',
+                '-shortest',
+                '-f', 'flv',
+                '-flvflags', 'no_duration_filesize',
+                rtmp_url
+            ]
+            self.current_stream_process = subprocess.Popen(stream_cmd)
+            time.sleep(2)  # 等待流稳定
+            self.stop_current_stream()
             # self.start_background_stream(audio_path)
             print("streaming end")
+            print(f"Starting post-stream:")
+            self.start_stream(rtmp_url, loop=True)
             
         else:
             print('Total process time of {} frames including saving images = {}s'.format(
@@ -390,32 +429,63 @@ class Avatar:
             stream = f"ffmpeg -re -stream_loop -1 -i {output_vid} -c copy -f flv {rtmp_url}"
             os.system(stream)
         print("\n")
-
-    def start_background_stream(self, audio_path=None):
+    
+    def stop_current_stream(self):
         """
-        启动后台推流
+        停止当前正在播放的流
         """
-        def stream_worker():
-            while True:
+        with self.stream_lock:
+            if self.current_stream_process and self.current_stream_process.poll() is None:
+                self.current_stream_process.terminate()
                 try:
-                    # if audio_path and os.path.exists(audio_path):
-                    #     cmd = f"ffmpeg -re -framerate 25 -f image2 -stream_loop -1 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -pix_fmt yuv420p -g 30 -b:v 2048k -c:a aac -ar 44100 -ac 2 -f flv -flvflags no_duration_filesize rtmp://43.139.227.110:1935/live/livestream"
-                    # else:
-                    cmd = f"ffmpeg -re -framerate 25 -f image2 -stream_loop -1 -i {self.avatar_path}/tmp/%08d.png -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -pix_fmt yuv420p -g 30 -b:v 2048k -f flv -flvflags no_duration_filesize rtmp://43.139.227.110:1935/live/livestream"
-                    
-                    print("开始推流...")
-                    subprocess.run(cmd, shell=True, check=True)
-                except subprocess.CalledProcessError:
-                    print("推流中断，5秒后重试...")
-                    time.sleep(5)
-                except Exception as e:
-                    print(f"推流错误: {e}")
-                    break
+                    self.current_stream_process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    self.current_stream_process.kill()
+                print("Stopped current stream")
+            self.current_stream_process = None
+            
+    def start_stream(self, rtmp_url:str):
+        """
+        开始播放MP4文件到RTMP服务器
+        """
+        with self.stream_lock:
+            self.stop_current_stream()
+            stream_cmd = [
+               'ffmpeg',
+                '-re',
+                '-framerate', '30',
+                '-i', "./audio_0.mp4",
+                '-c:v', 'libx264',
+                '-preset', 'medium',
+                '-profile:v', 'baseline',
+                '-level', '3.1',
+                '-pix_fmt', 'yuv420p',
+                '-g', '300',
+                '-keyint_min', '60',
+                '-b:v', '1200k',
+                '-maxrate', '1200k',
+                '-bufsize', '1800k',
+                '-c:a', 'aac',
+                '-ar', '16000',
+                '-ac', '1',
+                '-b:a', '64k',
+                '-map', '0:v:0',
+                '-map', '1:a:0',
+                '-shortest',
+                '-f', 'flv',
+                '-flvflags', 'no_duration_filesize',
+                rtmp_url
+            ]
+            
+            try:
+                self.current_stream_process = subprocess.Popen(stream_cmd)
+                print(f"Started streaming default mp4 to {rtmp_url}")
+                time.sleep(2)  # 等待流稳定
+                return True
+            except Exception as e:
+                print(f"Failed to start MP4 streaming: {e}")
+                return False
         
-        # 启动推流线程
-        stream_thread = threading.Thread(target=stream_worker, daemon=True)
-        stream_thread.start()
-        print("后台推流已启动")
 
 if __name__ == "__main__":
     '''
