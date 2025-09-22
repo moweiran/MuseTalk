@@ -37,7 +37,7 @@ def initialize_avatar(avatar_id:str = "mofei"):
             video_path=f"data/video/{avatar_id}.mp4",
             bbox_shift=0,
             batch_size=20,
-            preparation=False)
+            preparation=True)
         print("Avatar实例初始化完成")
     return avatar_instance
 

@@ -1,3 +1,6 @@
+export HTTP_PROXY=http://127.0.0.1:20171
+export HTTPS_PROXY=http://127.0.0.1:20171
+
 CUDA 12.8 的显卡可能会有错误，请自行解决
 
 错误一：
