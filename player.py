@@ -19,6 +19,8 @@ class Player:
             '-stream_loop', '-1',
             '-r', '30',
             '-i', f"./data/video/mofei.mp4",
+            '-c:v', 'libx264',  # 指定视频编码器
+            '-c:a', 'aac',
             '-preset', 'medium',
             '-profile:v', 'baseline',
             '-level', '3.1',
