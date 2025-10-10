@@ -335,12 +335,6 @@ class Avatar:
         
     #     print("All threads have finished processing frames.")
         
-    def cleanup_thread_pool(self):
-        """
-        清理线程池，确保所有线程资源被释放
-        """
-        print("Cleaning up thread pool resources...")
-        
     def process_frames(self, res_frame_queue, video_len, skip_save_images):
         print(f'video_len={video_len} skip_save_images={skip_save_images}')
         
@@ -421,7 +415,7 @@ class Avatar:
             pred_latents = pred_latents.to(device=self.device, dtype=self.vae.vae.dtype)
             recon = self.vae.decode_latents(pred_latents)
             for res_frame in recon:
-                print(f"idx={self.idx}")
+                print(f"recon idx={self.idx}")
                 res_frame_queue.put(res_frame)
         # Close the queue and sub-thread after all tasks are completed
         
