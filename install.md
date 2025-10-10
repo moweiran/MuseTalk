@@ -152,3 +152,7 @@ sudo ufw reload
 
 # 验证端口是否已开放
 sudo ufw status
+
+
+echo "查找占用GPU的进程:"
+nvidia-smi --query-compute-apps=pid,process_name,used_memory --format=csv

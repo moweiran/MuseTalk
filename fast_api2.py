@@ -16,6 +16,12 @@ def gpu_check():
     if torch.cuda.is_available():
         gpu_count = torch.cuda.device_count()
         print(f"Available GPUs: {gpu_count}")
+        device = torch.device(f"cuda:{gpu_id}")
+        # 打印device信息
+        print(f"Device object: {device}")
+        print(f"Device type: {device.type}")  # cuda
+        print(f"Device index: {device.index}")  # 4
+        
         for i in range(gpu_count):
             print(f"GPU {i}: {torch.cuda.get_device_name(i)}")
         

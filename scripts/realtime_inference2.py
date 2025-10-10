@@ -92,6 +92,8 @@ class Avatar:
         self.idx = 0
         # self.skip_save_images = False
         self.skip_save_images = True
+        self.stream_queue = queue.Queue(maxsize=100)
+        self.streaming = False
         self.init_model()
         self.init()
         print("Avatar initialized.")
@@ -274,11 +276,28 @@ class Avatar:
 
         torch.save(self.input_latent_list_cycle, os.path.join(self.latents_out_path))
         print("preparing data materials done.")
+    
+    def clear_stream_queue(self):
+        """
+        清空stream_queue中的所有帧
+        """
+        cleared_count = 0
+        while not self.stream_queue.empty():
+            try:
+                self.stream_queue.get_nowait()
+                cleared_count += 1
+            except queue.Empty:
+                break
+        print(f"Cleared {cleared_count} frames from stream queue")
 
     def process_frames(self, res_frame_queue, video_len, skip_save_images):
         print(f'video_len={video_len} skip_save_images={skip_save_images}')
+        # 清空队列
+        self.clear_stream_queue()
+        
         while True:
             if self.idx >= video_len - 1:
+                print("Finished processing all frames")
                 break
             try:
                 start = time.time()
@@ -301,6 +320,12 @@ class Avatar:
                 print(f"Saving image {self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png")
                 output_path = f"{self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png"
                 cv2.imwrite(output_path, combine_frame)
+            
+            try:
+                self.stream_queue.put(combine_frame)
+            except queue.Full:
+                print("queue is full")
+                
             self.idx = self.idx + 1
 
 
@@ -332,8 +357,9 @@ class Avatar:
         self.idx = 0
         # Create a sub-thread and start it
         process_thread = threading.Thread(target=self.process_frames, args=(res_frame_queue, video_num, skip_save_images))
+        print(f"processing start")
         process_thread.start()
-        print(f"processing end")
+        print(f"processing start2")
 
         gen = datagen(whisper_chunks,
                      self.input_latent_list_cycle,
@@ -353,7 +379,10 @@ class Avatar:
             for res_frame in recon:
                 res_frame_queue.put(res_frame)
         # Close the queue and sub-thread after all tasks are completed
+        
+        print(f"processing join")
         process_thread.join()
+        print(f"processing join2")
 
         if self.skip_save_images is True:
             print('Total process time of {} frames without saving images = {}s'.format(
