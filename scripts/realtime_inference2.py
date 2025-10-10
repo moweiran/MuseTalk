@@ -389,7 +389,7 @@ class Avatar:
             # stream = f"ffmpeg -re -framerate 25 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -pix_fmt yuv420p -g 30 -b:v 2048k -c:a aac -b:a 128k -ar 44100 -ac 2 -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize {rtmp_url}"
            
             player.stop()
-            
+            time.sleep(10)
             player2.play()
             # Wait for player to finish using event
             print("Waiting for player to finish...")
@@ -439,6 +439,7 @@ class Avatar:
             # ]
             # subprocess.run(stream_cmd)
             print(f"streaming... avatar_path={self.avatar_path}  audio_path={audio_path} end")
+            time.sleep(10)
             player.play(rtmp_url)
             shutil.rmtree(f"{self.avatar_path}/tmp")
             
