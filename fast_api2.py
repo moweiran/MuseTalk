@@ -12,6 +12,7 @@ def gpu_check():
     """
     测试GPU是否可用
     """
+    gpu_id = 4 # 
     if torch.cuda.is_available():
         gpu_count = torch.cuda.device_count()
         print(f"Available GPUs: {gpu_count}")

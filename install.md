@@ -132,3 +132,23 @@ tail -f fastapi.log
 http://183.63.45.52:5001/inference?url=https://icommu-prod-1326448221.cos.ap-guangzhou.myqcloud.com/asserts/1b829bdcf4f044e497af5a1d8070b6ac.mp3&rtmp_url=rtmps://rtmp.icommu.cn/live/livestream
 
 lsof -i :5001
+
+# 检查UFW状态
+sudo ufw status
+
+# 启用UFW（如果未启用）
+sudo ufw enable
+
+# 开放5002端口
+sudo ufw allow 5002
+
+# 或者指定协议
+sudo ufw allow 5002/tcp
+# 或
+sudo ufw allow 5002/udp
+
+# 重新加载防火墙规则
+sudo ufw reload
+
+# 验证端口是否已开放
+sudo ufw status
