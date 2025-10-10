@@ -94,6 +94,7 @@ class Avatar:
         self.skip_save_images = True
         self.stream_queue = queue.Queue(maxsize=100)
         self.streaming = False
+        self.stream_thread = None
         self.init_model()
         self.init()
         print("Avatar initialized.")
@@ -397,9 +398,16 @@ class Avatar:
             # rtmps://rtmp.icommu.cn/live/livestream test app key and secret
             # 测试用例
             # stream = f"ffmpeg -re -framerate 25 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -pix_fmt yuv420p -g 30 -b:v 2048k -c:a aac -b:a 128k -ar 44100 -ac 2 -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize {rtmp_url}"
-            player.stop()
-            stream = f"ffmpeg -re -framerate 30 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset medium -profile:v baseline -level 3.1 -pix_fmt yuv420p -g 300 -keyint_min 60 -b:v 1200k -maxrate 1200k -bufsize 1800k -c:a aac -ar 16000 -ac 1 -b:a 64k -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize {rtmp_url}"
-            os.system(stream)
+           
+            # player.stop()
+            # stream = f"ffmpeg -re -framerate 30 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset medium -profile:v baseline -level 3.1 -pix_fmt yuv420p -g 300 -keyint_min 60 -b:v 1200k -maxrate 1200k -bufsize 1800k -c:a aac -ar 16000 -ac 1 -b:a 64k -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize {rtmp_url}"
+            # os.system(stream)
+            
+            print(f"Starting pre-stream:")
+            # Start streaming before processing
+            if rtmp_url:
+                self.start_streaming(rtmp_url)
+            process_thread.join()
             # stream_cmd = [
             #     'ffmpeg',
             #     '-re',
@@ -454,7 +462,74 @@ class Avatar:
             stream = f"ffmpeg -re -stream_loop -1 -i {output_vid} -c copy -f flv {rtmp_url}"
             os.system(stream)
         print("\n")
+       
+    def start_streaming(self, rtmp_url):
+        """
+        Start streaming thread that reads frames from stream_queue and sends to ffmpeg
+        """
+        self.streaming = True
+        self.stream_thread = threading.Thread(target=self._stream_to_ffmpeg, args=(rtmp_url,))
+        self.stream_thread.start()
+    def stop_streaming(self):
+        """
+        Stop the streaming thread
+        """
+        self.streaming = False
+        if self.stream_thread:
+            self.stream_thread.join()
+    def _stream_to_ffmpeg(self, rtmp_url):
+        """
+        Stream frames from queue to ffmpeg
+        """
+        # ffmpeg command to receive frames from stdin and stream to RTMP
+        ffmpeg_cmd = [
+            'ffmpeg',
+            '-re',
+            '-r', '30',
+            '-i', "-",
+            '-c:v', 'libx264',  # 指定视频编码器
+            '-c:a', 'aac',
+            '-preset', 'medium',
+            '-profile:v', 'baseline',
+            '-level', '3.1',
+            '-pix_fmt', 'yuv420p',
+            '-g', '300',
+            '-b:v', '1200k',
+            '-maxrate', '1200k',
+            '-bufsize', '1800k',
+            '-s', '720x1280',
+            '-ar', '16000',
+            '-ac', '1',
+            '-b:a', '64k',
+            '-f', 'flv',
+            '-flags', '+low_delay',
+            rtmp_url
+        ]
         
+        process = None
+        try:
+            process = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
+            
+            while self.streaming:
+                try:
+                    # Get frame from queue with timeout
+                    frame = self.stream_queue.get(timeout=1)
+                    # Write frame to ffmpeg stdin
+                    process.stdin.write(frame.tobytes())
+                    process.stdin.flush()
+                except queue.Empty:
+                    continue
+                except Exception as e:
+                    print(f"Error streaming frame: {e}")
+                    break
+                    
+        except Exception as e:
+            print(f"Error starting ffmpeg process: {e}")
+        finally:
+            self.streaming = False
+            if process:
+                process.stdin.close()
+                process.wait()
 
 if __name__ == "__main__":
     '''
