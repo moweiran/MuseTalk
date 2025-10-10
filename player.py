@@ -66,7 +66,7 @@ class Player:
 
         # 如果没有线程在运行，则启动新的线程
         self.stop_event.clear()  # 确保停止事件未设置
-        self.mp4_thread = threading.Thread(target=self.start_streaming, args=(rtmp_url))
+        self.mp4_thread = threading.Thread(target=self.start_streaming, args=(rtmp_url,))
         self.mp4_thread.start()
         print("Streaming started.")
         
