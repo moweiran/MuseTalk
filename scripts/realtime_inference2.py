@@ -306,14 +306,14 @@ class Avatar:
             mask_crop_box = self.mask_coords_list_cycle[self.idx % (len(self.mask_coords_list_cycle))]
             combine_frame = get_image_blending(ori_frame,res_frame,bbox,mask,mask_crop_box)
             print(f"idx={self.idx}")
-            if skip_save_images is False:
+            if skip_save_images is True:
                 print(f"Saving image {self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png")
                 output_path = f"{self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png"
                 cv2.imwrite(output_path, combine_frame)
             
             # Store frame in buffer instead of saving to disk
-            with self.buffer_lock:
-                self.frame_buffer.append(combine_frame)
+            # with self.buffer_lock:
+            #     self.frame_buffer.append(combine_frame)
                 
             self.idx = self.idx + 1
 
@@ -387,16 +387,19 @@ class Avatar:
             # 测试用例
             # stream = f"ffmpeg -re -framerate 25 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -pix_fmt yuv420p -g 30 -b:v 2048k -c:a aac -b:a 128k -ar 44100 -ac 2 -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize {rtmp_url}"
            
-            # player.stop()
-            # stream = f"ffmpeg -re -framerate 30 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset medium -profile:v baseline -level 3.1 -pix_fmt yuv420p -g 300 -keyint_min 60 -b:v 1200k -maxrate 1200k -bufsize 1800k -c:a aac -ar 16000 -ac 1 -b:a 64k -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize {rtmp_url}"
-            # os.system(stream)
-            
             player.stop()
-            print(f"Starting pre-stream:")
-            # Start streaming before processing
-            if rtmp_url:
-                self.stream_frames_from_memory(rtmp_url)
-            process_thread.join()
+            stream = f"ffmpeg -re -framerate 30 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset medium -profile:v baseline -level 3.1 -pix_fmt yuv420p -g 300 -keyint_min 60 -b:v 1200k -maxrate 1200k -bufsize 1800k -c:a aac -ar 16000 -ac 1 -b:a 64k -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize {rtmp_url}"
+            os.system(stream)
+            
+            # 图片buffer 流模式开始
+            # player.stop()
+            # print(f"Starting pre-stream:")
+            # # Start streaming before processing
+            # if rtmp_url:
+            #     self.stream_frames_from_memory(rtmp_url)
+            # process_thread.join()
+            # 图片buffer 流模式开始
+            
             # stream_cmd = [
             #     'ffmpeg',
             #     '-re',
