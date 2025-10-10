@@ -18,7 +18,7 @@ from musetalk.utils.preprocessing import get_landmark_and_bbox, read_imgs
 from musetalk.utils.blending import get_image_prepare_material, get_image_blending
 from musetalk.utils.utils import load_all_model
 from musetalk.utils.audio_processor import AudioProcessor
-from player import Player
+from player import Player,Player2
 
 import shutil
 import threading
@@ -27,6 +27,7 @@ import time
 import subprocess
 
 player = Player()  # Global player instance
+player2 = Player2()
 
 def fast_check_ffmpeg():
     try:
@@ -388,8 +389,18 @@ class Avatar:
             # stream = f"ffmpeg -re -framerate 25 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -pix_fmt yuv420p -g 30 -b:v 2048k -c:a aac -b:a 128k -ar 44100 -ac 2 -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize {rtmp_url}"
            
             player.stop()
-            stream = f"ffmpeg -re -framerate 30 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset medium -profile:v baseline -level 3.1 -pix_fmt yuv420p -g 300 -keyint_min 60 -b:v 1200k -maxrate 1200k -bufsize 1800k -c:a aac -ar 16000 -ac 1 -b:a 64k -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize {rtmp_url}"
-            os.system(stream)
+            
+            player2.play()
+            # Wait for player to finish using event
+            print("Waiting for player to finish...")
+            if player2.wait_for_completion():
+                print("Player finished normally")
+            else:
+                print("Player timeout or interrupted")
+                player2.stop()
+            
+            # stream = f"ffmpeg -re -framerate 30 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset medium -profile:v baseline -level 3.1 -pix_fmt yuv420p -g 300 -keyint_min 60 -b:v 1200k -maxrate 1200k -bufsize 1800k -c:a aac -ar 16000 -ac 1 -b:a 64k -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize {rtmp_url}"
+            # os.system(stream)
             
             # 图片buffer 流模式开始
             # player.stop()
