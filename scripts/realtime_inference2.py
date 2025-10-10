@@ -322,7 +322,8 @@ class Avatar:
         self.idx_lock = threading.Lock()  # 用于保护 idx 的线程安全
 
         # 创建线程池
-        num_threads = 32  # 根据 CPU 核心数或任务量调整线程数
+        print("cpu with {} threads...".format(os.cpu_count()))
+        num_threads = min(32, os.cpu_count() or 1)  # 根据 CPU 核心数或任务量调整线程数
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
             futures = []
             for thread_id in range(num_threads):
@@ -333,6 +334,13 @@ class Avatar:
                 future.result()  # 确保线程完成
         
         print("All threads have finished processing frames.")
+        
+    def cleanup_thread_pool(self):
+        """
+        清理线程池，确保所有线程资源被释放
+        """
+        print("Cleaning up thread pool resources...")
+        
     # def process_frames(self, res_frame_queue, video_len, skip_save_images):
     #     print(f'video_len={video_len} skip_save_images={skip_save_images}')
         
@@ -449,59 +457,63 @@ class Avatar:
             # player2.stop()
             
             player.stop()
-            stream = f"ffmpeg -re -framerate 30 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset medium -profile:v baseline -level 3.1 -pix_fmt yuv420p -g 300 -keyint_min 60 -b:v 1200k -maxrate 1200k -bufsize 1800k -c:a aac -ar 16000 -ac 1 -b:a 64k -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize {rtmp_url}"
-            os.system(stream)
+            
+            # 0.start=============
+            # stream = f"ffmpeg -re -framerate 30 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset medium -profile:v baseline -level 3.1 -pix_fmt yuv420p -g 300 -keyint_min 60 -b:v 1200k -maxrate 1200k -bufsize 1800k -c:a aac -ar 16000 -ac 1 -b:a 64k -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize {rtmp_url}"
+            # os.system(stream)
+            # 0.end=============
+            
             # 1.start=============
             # Use subprocess instead of os.system for better control
-            # stream_cmd = [
-            #     'ffmpeg',
-            #     '-re',
-            #     '-thread_queue_size', '512',  # 增加线程队列大小
-            #     '-framerate', '30',
-            #     '-f', 'image2',
-            #     '-i', f'{self.avatar_path}/tmp/%08d.png',
-            #     '-i', audio_path,
-            #     '-c:v', 'libx264',
-            #     '-preset', 'medium',
-            #     '-profile:v', 'baseline',
-            #     '-level', '3.1',
-            #     '-pix_fmt', 'yuv420p',
-            #     '-g', '300',
-            #     '-keyint_min', '60',
-            #     '-b:v', '1200k',
-            #     '-maxrate', '1200k',
-            #     '-bufsize', '1800k',
-            #     '-c:a', 'aac',
-            #     '-ar', '16000',
-            #     '-ac', '1',
-            #     '-b:a', '64k',
-            #     '-map', '0:v:0',
-            #     '-map', '1:a:0',
-            #     '-shortest',
-            #     '-f', 'flv',
-            #     '-flvflags', 'no_duration_filesize',
-            #     rtmp_url
-            # ]
+            stream_cmd = [
+                'ffmpeg',
+                '-re',
+                '-thread_queue_size', '512',  # 增加线程队列大小
+                '-framerate', '30',
+                '-f', 'image2',
+                '-i', f'{self.avatar_path}/tmp/%08d.png',
+                '-i', audio_path,
+                '-c:v', 'libx264',
+                '-preset', 'medium',
+                '-profile:v', 'baseline',
+                '-level', '3.1',
+                '-pix_fmt', 'yuv420p',
+                '-g', '300',
+                '-keyint_min', '60',
+                '-b:v', '1200k',
+                '-maxrate', '1200k',
+                '-bufsize', '1800k',
+                '-c:a', 'aac',
+                '-ar', '16000',
+                '-ac', '1',
+                '-b:a', '64k',
+                '-map', '0:v:0',
+                '-map', '1:a:0',
+                '-shortest',
+                '-f', 'flv',
+                '-flvflags', 'no_duration_filesize',
+                rtmp_url
+            ]
             
-            # process = None
-            # try:
-            #     # Start the ffmpeg process
-            #     process = subprocess.Popen(stream_cmd)
-            #     # Wait for completion
-            #     process.wait()
-            #     print("Streaming completed successfully")
-            # except Exception as e:
-            #     print(f"Error during streaming: {e}")
-            # finally:
-            #     # Ensure process is properly cleaned up
-            #     if process and process.poll() is None:
-            #         process.terminate()
-            #         try:
-            #             process.wait(timeout=5)
-            #         except subprocess.TimeoutExpired:
-            #             process.kill()
-            #             process.wait()
-            #     print("Streaming process cleaned up")
+            process = None
+            try:
+                # Start the ffmpeg process
+                process = subprocess.Popen(stream_cmd)
+                # Wait for completion
+                process.wait()
+                print("Streaming completed successfully")
+            except Exception as e:
+                print(f"Error during streaming: {e}")
+            finally:
+                # Ensure process is properly cleaned up
+                if process and process.poll() is None:
+                    process.terminate()
+                    try:
+                        process.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
+                        process.wait()
+                print("Streaming process cleaned up")
             # 1.end=======
             
             # 2.图片buffer 流模式开始
@@ -540,7 +552,6 @@ class Avatar:
             #     rtmp_url
             # ]
             # subprocess.run(stream_cmd)
-            print(f"streaming... avatar_path={self.avatar_path}  audio_path={audio_path} end")
             shutil.rmtree(f"{self.avatar_path}/tmp")
             time.sleep(1)
             player.play(rtmp_url)
