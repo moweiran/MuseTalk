@@ -18,7 +18,7 @@ from musetalk.utils.preprocessing import get_landmark_and_bbox, read_imgs
 from musetalk.utils.blending import get_image_prepare_material, get_image_blending
 from musetalk.utils.utils import load_all_model
 from musetalk.utils.audio_processor import AudioProcessor
-from player import Player,Player2
+from player import Player
 
 import shutil
 import threading
@@ -27,7 +27,7 @@ import time
 import subprocess
 
 player = Player()  # Global player instance
-player2 = Player2()
+# player2 = Player2()
 
 def fast_check_ffmpeg():
     try:
