@@ -324,9 +324,15 @@ class Avatar:
         # 创建线程池
         num_threads = 16  # 根据 CPU 核心数或任务量调整线程数
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
+            futures = []
             for thread_id in range(num_threads):
-                executor.submit(self.process_frame_task, res_frame_queue, video_len, skip_save_images, thread_id)
+                futures.append(executor.submit(self.process_frame_task, res_frame_queue, video_len, skip_save_images, thread_id))
+                
+            # 等待所有线程完成
+            for future in futures:
+                future.result()  # 确保线程完成
         
+        print("All threads have finished processing frames.")
     # def process_frames(self, res_frame_queue, video_len, skip_save_images):
     #     print(f'video_len={video_len} skip_save_images={skip_save_images}')
         
