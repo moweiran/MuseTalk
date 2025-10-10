@@ -277,63 +277,63 @@ class Avatar:
         torch.save(self.input_latent_list_cycle, os.path.join(self.latents_out_path))
         print("preparing data materials done.")
         
-    def process_frame_task(self, res_frame_queue, video_len, skip_save_images, thread_id):
-        """
-        单个线程处理帧的任务
-        """
-        while True:
-            with self.idx_lock:  # 确保 idx 的线程安全
-                if self.idx >= video_len - 1:
-                    print(f"Thread-{thread_id}: Finished processing all frames")
-                    break
-                current_idx = self.idx
-                self.idx += 1
+    # def process_frame_task(self, res_frame_queue, video_len, skip_save_images, thread_id):
+    #     """
+    #     单个线程处理帧的任务
+    #     """
+    #     while True:
+    #         with self.idx_lock:  # 确保 idx 的线程安全
+    #             if self.idx >= video_len - 1:
+    #                 print(f"Thread-{thread_id}: Finished processing all frames")
+    #                 break
+    #             current_idx = self.idx
+    #             self.idx += 1
 
-            try:
-                start = time.time()
-                res_frame = res_frame_queue.get(block=True, timeout=1)
-            except queue.Empty:
-                continue
+    #         try:
+    #             start = time.time()
+    #             res_frame = res_frame_queue.get(block=True, timeout=1)
+    #         except queue.Empty:
+    #             continue
 
-            bbox = self.coord_list_cycle[current_idx % len(self.coord_list_cycle)]
-            ori_frame = copy.deepcopy(self.frame_list_cycle[current_idx % len(self.frame_list_cycle)])
-            x1, y1, x2, y2 = bbox
-            try:
-                res_frame = cv2.resize(res_frame.astype(np.uint8), (x2 - x1, y2 - y1))
-            except Exception as e:
-                print(f"Thread-{thread_id}: Error resizing frame: {e}")
-                continue
+    #         bbox = self.coord_list_cycle[current_idx % len(self.coord_list_cycle)]
+    #         ori_frame = copy.deepcopy(self.frame_list_cycle[current_idx % len(self.frame_list_cycle)])
+    #         x1, y1, x2, y2 = bbox
+    #         try:
+    #             res_frame = cv2.resize(res_frame.astype(np.uint8), (x2 - x1, y2 - y1))
+    #         except Exception as e:
+    #             print(f"Thread-{thread_id}: Error resizing frame: {e}")
+    #             continue
 
-            mask = self.mask_list_cycle[current_idx % len(self.mask_list_cycle)]
-            mask_crop_box = self.mask_coords_list_cycle[current_idx % len(self.mask_coords_list_cycle)]
-            combine_frame = get_image_blending(ori_frame, res_frame, bbox, mask, mask_crop_box)
-            print(f"Thread-{thread_id}: Processing frame idx={current_idx}")
+    #         mask = self.mask_list_cycle[current_idx % len(self.mask_list_cycle)]
+    #         mask_crop_box = self.mask_coords_list_cycle[current_idx % len(self.mask_coords_list_cycle)]
+    #         combine_frame = get_image_blending(ori_frame, res_frame, bbox, mask, mask_crop_box)
+    #         print(f"Thread-{thread_id}: Processing frame idx={current_idx}")
 
-            if skip_save_images:
-                output_path = f"{self.avatar_path}/tmp/{str(current_idx).zfill(8)}.png"
-                print(f"Thread-{thread_id}: Saving image {output_path}")
-                cv2.imwrite(output_path, combine_frame)
-    def process_frames(self, res_frame_queue, video_len, skip_save_images):
-        """
-        多线程处理帧
-        """
-        print(f'video_len={video_len} skip_save_images={skip_save_images}')
-        self.idx = 0
-        self.idx_lock = threading.Lock()  # 用于保护 idx 的线程安全
+    #         if skip_save_images:
+    #             output_path = f"{self.avatar_path}/tmp/{str(current_idx).zfill(8)}.png"
+    #             print(f"Thread-{thread_id}: Saving image {output_path}")
+    #             cv2.imwrite(output_path, combine_frame)
+    # def process_frames(self, res_frame_queue, video_len, skip_save_images):
+    #     """
+    #     多线程处理帧
+    #     """
+    #     print(f'video_len={video_len} skip_save_images={skip_save_images}')
+    #     self.idx = 0
+    #     self.idx_lock = threading.Lock()  # 用于保护 idx 的线程安全
 
-        # 创建线程池
-        print("cpu with {} threads...".format(os.cpu_count()))
-        num_threads = min(32, os.cpu_count() or 1)  # 根据 CPU 核心数或任务量调整线程数
-        with ThreadPoolExecutor(max_workers=num_threads) as executor:
-            futures = []
-            for thread_id in range(num_threads):
-                futures.append(executor.submit(self.process_frame_task, res_frame_queue, video_len, skip_save_images, thread_id))
+    #     # 创建线程池
+    #     print("cpu with {} threads...".format(os.cpu_count()))
+    #     num_threads = min(32, os.cpu_count() or 1)  # 根据 CPU 核心数或任务量调整线程数
+    #     with ThreadPoolExecutor(max_workers=num_threads) as executor:
+    #         futures = []
+    #         for thread_id in range(num_threads):
+    #             futures.append(executor.submit(self.process_frame_task, res_frame_queue, video_len, skip_save_images, thread_id))
                 
-            # 等待所有线程完成
-            for future in futures:
-                future.result()  # 确保线程完成
+    #         # 等待所有线程完成
+    #         for future in futures:
+    #             future.result()  # 确保线程完成
         
-        print("All threads have finished processing frames.")
+    #     print("All threads have finished processing frames.")
         
     def cleanup_thread_pool(self):
         """
@@ -341,36 +341,36 @@ class Avatar:
         """
         print("Cleaning up thread pool resources...")
         
-    # def process_frames(self, res_frame_queue, video_len, skip_save_images):
-    #     print(f'video_len={video_len} skip_save_images={skip_save_images}')
+    def process_frames(self, res_frame_queue, video_len, skip_save_images):
+        print(f'video_len={video_len} skip_save_images={skip_save_images}')
         
-    #     while True:
-    #         if self.idx >= video_len - 1:
-    #             print("Finished processing all frames")
-    #             break
-    #         try:
-    #             start = time.time()
-    #             res_frame = res_frame_queue.get(block=True, timeout=1)
-    #         except queue.Empty:
-    #             continue
+        while True:
+            if self.idx >= video_len - 1:
+                print("Finished processing all frames")
+                break
+            try:
+                start = time.time()
+                res_frame = res_frame_queue.get(block=True, timeout=1)
+            except queue.Empty:
+                continue
 
-    #         bbox = self.coord_list_cycle[self.idx % (len(self.coord_list_cycle))]
-    #         ori_frame = copy.deepcopy(self.frame_list_cycle[self.idx % (len(self.frame_list_cycle))])
-    #         x1, y1, x2, y2 = bbox
-    #         try:
-    #             res_frame = cv2.resize(res_frame.astype(np.uint8), (x2 - x1, y2 - y1))
-    #         except:
-    #             continue
-    #         mask = self.mask_list_cycle[self.idx % (len(self.mask_list_cycle))]
-    #         mask_crop_box = self.mask_coords_list_cycle[self.idx % (len(self.mask_coords_list_cycle))]
-    #         combine_frame = get_image_blending(ori_frame,res_frame,bbox,mask,mask_crop_box)
-    #         print(f"idx={self.idx}")
-    #         if skip_save_images is True:
-    #             print(f"Saving image {self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png")
-    #             output_path = f"{self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png"
-    #             cv2.imwrite(output_path, combine_frame)
+            bbox = self.coord_list_cycle[self.idx % (len(self.coord_list_cycle))]
+            ori_frame = copy.deepcopy(self.frame_list_cycle[self.idx % (len(self.frame_list_cycle))])
+            x1, y1, x2, y2 = bbox
+            try:
+                res_frame = cv2.resize(res_frame.astype(np.uint8), (x2 - x1, y2 - y1))
+            except:
+                continue
+            mask = self.mask_list_cycle[self.idx % (len(self.mask_list_cycle))]
+            mask_crop_box = self.mask_coords_list_cycle[self.idx % (len(self.mask_coords_list_cycle))]
+            combine_frame = get_image_blending(ori_frame,res_frame,bbox,mask,mask_crop_box)
+            print(f"idx={self.idx}")
+            if skip_save_images is True:
+                print(f"Saving image {self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png")
+                output_path = f"{self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png"
+                cv2.imwrite(output_path, combine_frame)
                 
-    #         self.idx = self.idx + 1
+            self.idx = self.idx + 1
 
 
     @torch.no_grad()
@@ -421,6 +421,7 @@ class Avatar:
             pred_latents = pred_latents.to(device=self.device, dtype=self.vae.vae.dtype)
             recon = self.vae.decode_latents(pred_latents)
             for res_frame in recon:
+                print(f"idx={self.idx}")
                 res_frame_queue.put(res_frame)
         # Close the queue and sub-thread after all tasks are completed
         
