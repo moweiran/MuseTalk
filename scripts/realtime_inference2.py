@@ -449,67 +449,69 @@ class Avatar:
             # player2.stop()
             
             player.stop()
-            # stream = f"ffmpeg -re -framerate 30 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset medium -profile:v baseline -level 3.1 -pix_fmt yuv420p -g 300 -keyint_min 60 -b:v 1200k -maxrate 1200k -bufsize 1800k -c:a aac -ar 16000 -ac 1 -b:a 64k -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize {rtmp_url}"
-            # os.system(stream)
+            stream = f"ffmpeg -re -framerate 30 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset medium -profile:v baseline -level 3.1 -pix_fmt yuv420p -g 300 -keyint_min 60 -b:v 1200k -maxrate 1200k -bufsize 1800k -c:a aac -ar 16000 -ac 1 -b:a 64k -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize {rtmp_url}"
+            os.system(stream)
+            # 1.start=============
             # Use subprocess instead of os.system for better control
-            stream_cmd = [
-                'ffmpeg',
-                '-re',
-                '-thread_queue_size', '512',  # 增加线程队列大小
-                '-framerate', '30',
-                '-f', 'image2',
-                '-i', f'{self.avatar_path}/tmp/%08d.png',
-                '-i', audio_path,
-                '-c:v', 'libx264',
-                '-preset', 'medium',
-                '-profile:v', 'baseline',
-                '-level', '3.1',
-                '-pix_fmt', 'yuv420p',
-                '-g', '300',
-                '-keyint_min', '60',
-                '-b:v', '1200k',
-                '-maxrate', '1200k',
-                '-bufsize', '1800k',
-                '-c:a', 'aac',
-                '-ar', '16000',
-                '-ac', '1',
-                '-b:a', '64k',
-                '-map', '0:v:0',
-                '-map', '1:a:0',
-                '-shortest',
-                '-f', 'flv',
-                '-flvflags', 'no_duration_filesize',
-                rtmp_url
-            ]
+            # stream_cmd = [
+            #     'ffmpeg',
+            #     '-re',
+            #     '-thread_queue_size', '512',  # 增加线程队列大小
+            #     '-framerate', '30',
+            #     '-f', 'image2',
+            #     '-i', f'{self.avatar_path}/tmp/%08d.png',
+            #     '-i', audio_path,
+            #     '-c:v', 'libx264',
+            #     '-preset', 'medium',
+            #     '-profile:v', 'baseline',
+            #     '-level', '3.1',
+            #     '-pix_fmt', 'yuv420p',
+            #     '-g', '300',
+            #     '-keyint_min', '60',
+            #     '-b:v', '1200k',
+            #     '-maxrate', '1200k',
+            #     '-bufsize', '1800k',
+            #     '-c:a', 'aac',
+            #     '-ar', '16000',
+            #     '-ac', '1',
+            #     '-b:a', '64k',
+            #     '-map', '0:v:0',
+            #     '-map', '1:a:0',
+            #     '-shortest',
+            #     '-f', 'flv',
+            #     '-flvflags', 'no_duration_filesize',
+            #     rtmp_url
+            # ]
             
-            process = None
-            try:
-                # Start the ffmpeg process
-                process = subprocess.Popen(stream_cmd)
-                # Wait for completion
-                process.wait()
-                print("Streaming completed successfully")
-            except Exception as e:
-                print(f"Error during streaming: {e}")
-            finally:
-                # Ensure process is properly cleaned up
-                if process and process.poll() is None:
-                    process.terminate()
-                    try:
-                        process.wait(timeout=5)
-                    except subprocess.TimeoutExpired:
-                        process.kill()
-                        process.wait()
-                print("Streaming process cleaned up")
+            # process = None
+            # try:
+            #     # Start the ffmpeg process
+            #     process = subprocess.Popen(stream_cmd)
+            #     # Wait for completion
+            #     process.wait()
+            #     print("Streaming completed successfully")
+            # except Exception as e:
+            #     print(f"Error during streaming: {e}")
+            # finally:
+            #     # Ensure process is properly cleaned up
+            #     if process and process.poll() is None:
+            #         process.terminate()
+            #         try:
+            #             process.wait(timeout=5)
+            #         except subprocess.TimeoutExpired:
+            #             process.kill()
+            #             process.wait()
+            #     print("Streaming process cleaned up")
+            # 1.end=======
             
-            # 图片buffer 流模式开始
+            # 2.图片buffer 流模式开始
             # player.stop()
             # print(f"Starting pre-stream:")
             # # Start streaming before processing
             # if rtmp_url:
             #     self.stream_frames_from_memory(rtmp_url)
             # process_thread.join()
-            # 图片buffer 流模式开始
+            # 2.图片buffer 流模式开始
             
             # stream_cmd = [
             #     'ffmpeg',
@@ -539,9 +541,9 @@ class Avatar:
             # ]
             # subprocess.run(stream_cmd)
             print(f"streaming... avatar_path={self.avatar_path}  audio_path={audio_path} end")
+            shutil.rmtree(f"{self.avatar_path}/tmp")
             time.sleep(1)
             player.play(rtmp_url)
-            shutil.rmtree(f"{self.avatar_path}/tmp")
             
         else:
             print('Total process time of {} frames including saving images = {}s'.format(
