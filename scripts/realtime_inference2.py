@@ -455,6 +455,7 @@ class Avatar:
             stream_cmd = [
                 'ffmpeg',
                 '-re',
+                '-thread_queue_size', '512',  # 增加线程队列大小
                 '-framerate', '30',
                 '-f', 'image2',
                 '-i', f'{self.avatar_path}/tmp/%08d.png',
