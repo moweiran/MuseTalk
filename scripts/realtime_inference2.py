@@ -322,7 +322,7 @@ class Avatar:
         self.idx_lock = threading.Lock()  # 用于保护 idx 的线程安全
 
         # 创建线程池
-        num_threads = 16  # 根据 CPU 核心数或任务量调整线程数
+        num_threads = 32  # 根据 CPU 核心数或任务量调整线程数
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
             futures = []
             for thread_id in range(num_threads):
