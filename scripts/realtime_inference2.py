@@ -1,4 +1,5 @@
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 import os
 from omegaconf import OmegaConf
 import numpy as np
@@ -93,10 +94,6 @@ class Avatar:
         self.idx = 0
         # self.skip_save_images = False
         self.skip_save_images = True
-        self.frame_buffer = []
-        self.buffer_lock = threading.Lock()
-        self.streaming = False
-        self.stream_thread = None
         self.init_model()
         self.init()
         print("Avatar initialized.")
@@ -280,43 +277,86 @@ class Avatar:
         torch.save(self.input_latent_list_cycle, os.path.join(self.latents_out_path))
         print("preparing data materials done.")
         
-    def process_frames(self, res_frame_queue, video_len, skip_save_images):
-        print(f'video_len={video_len} skip_save_images={skip_save_images}')
-        # Clear frame buffer
-        with self.buffer_lock:
-            self.frame_buffer = []
-        
+    def process_frame_task(self, res_frame_queue, video_len, skip_save_images, thread_id):
+        """
+        单个线程处理帧的任务
+        """
         while True:
-            if self.idx >= video_len - 1:
-                print("Finished processing all frames")
-                break
+            with self.idx_lock:  # 确保 idx 的线程安全
+                if self.idx >= video_len - 1:
+                    print(f"Thread-{thread_id}: Finished processing all frames")
+                    break
+                current_idx = self.idx
+                self.idx += 1
+
             try:
                 start = time.time()
                 res_frame = res_frame_queue.get(block=True, timeout=1)
             except queue.Empty:
                 continue
 
-            bbox = self.coord_list_cycle[self.idx % (len(self.coord_list_cycle))]
-            ori_frame = copy.deepcopy(self.frame_list_cycle[self.idx % (len(self.frame_list_cycle))])
+            bbox = self.coord_list_cycle[current_idx % len(self.coord_list_cycle)]
+            ori_frame = copy.deepcopy(self.frame_list_cycle[current_idx % len(self.frame_list_cycle)])
             x1, y1, x2, y2 = bbox
             try:
                 res_frame = cv2.resize(res_frame.astype(np.uint8), (x2 - x1, y2 - y1))
-            except:
+            except Exception as e:
+                print(f"Thread-{thread_id}: Error resizing frame: {e}")
                 continue
-            mask = self.mask_list_cycle[self.idx % (len(self.mask_list_cycle))]
-            mask_crop_box = self.mask_coords_list_cycle[self.idx % (len(self.mask_coords_list_cycle))]
-            combine_frame = get_image_blending(ori_frame,res_frame,bbox,mask,mask_crop_box)
-            print(f"idx={self.idx}")
-            if skip_save_images is True:
-                print(f"Saving image {self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png")
-                output_path = f"{self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png"
+
+            mask = self.mask_list_cycle[current_idx % len(self.mask_list_cycle)]
+            mask_crop_box = self.mask_coords_list_cycle[current_idx % len(self.mask_coords_list_cycle)]
+            combine_frame = get_image_blending(ori_frame, res_frame, bbox, mask, mask_crop_box)
+            print(f"Thread-{thread_id}: Processing frame idx={current_idx}")
+
+            if skip_save_images:
+                output_path = f"{self.avatar_path}/tmp/{str(current_idx).zfill(8)}.png"
+                print(f"Thread-{thread_id}: Saving image {output_path}")
                 cv2.imwrite(output_path, combine_frame)
-            
-            # Store frame in buffer instead of saving to disk
-            # with self.buffer_lock:
-            #     self.frame_buffer.append(combine_frame)
+    def process_frames(self, res_frame_queue, video_len, skip_save_images):
+        """
+        多线程处理帧
+        """
+        print(f'video_len={video_len} skip_save_images={skip_save_images}')
+        self.idx = 0
+        self.idx_lock = threading.Lock()  # 用于保护 idx 的线程安全
+
+        # 创建线程池
+        num_threads = 4  # 根据 CPU 核心数或任务量调整线程数
+        with ThreadPoolExecutor(max_workers=num_threads) as executor:
+            for thread_id in range(num_threads):
+                executor.submit(self.process_frame_task, res_frame_queue, video_len, skip_save_images, thread_id)
+        
+    # def process_frames(self, res_frame_queue, video_len, skip_save_images):
+    #     print(f'video_len={video_len} skip_save_images={skip_save_images}')
+        
+    #     while True:
+    #         if self.idx >= video_len - 1:
+    #             print("Finished processing all frames")
+    #             break
+    #         try:
+    #             start = time.time()
+    #             res_frame = res_frame_queue.get(block=True, timeout=1)
+    #         except queue.Empty:
+    #             continue
+
+    #         bbox = self.coord_list_cycle[self.idx % (len(self.coord_list_cycle))]
+    #         ori_frame = copy.deepcopy(self.frame_list_cycle[self.idx % (len(self.frame_list_cycle))])
+    #         x1, y1, x2, y2 = bbox
+    #         try:
+    #             res_frame = cv2.resize(res_frame.astype(np.uint8), (x2 - x1, y2 - y1))
+    #         except:
+    #             continue
+    #         mask = self.mask_list_cycle[self.idx % (len(self.mask_list_cycle))]
+    #         mask_crop_box = self.mask_coords_list_cycle[self.idx % (len(self.mask_coords_list_cycle))]
+    #         combine_frame = get_image_blending(ori_frame,res_frame,bbox,mask,mask_crop_box)
+    #         print(f"idx={self.idx}")
+    #         if skip_save_images is True:
+    #             print(f"Saving image {self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png")
+    #             output_path = f"{self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png"
+    #             cv2.imwrite(output_path, combine_frame)
                 
-            self.idx = self.idx + 1
+    #         self.idx = self.idx + 1
 
 
     @torch.no_grad()
@@ -519,126 +559,6 @@ class Avatar:
             stream = f"ffmpeg -re -stream_loop -1 -i {output_vid} -c copy -f flv {rtmp_url}"
             os.system(stream)
         print("\n")
-    
-    def stream_frames_from_memory(self, rtmp_url):
-        """
-        Stream frames directly from memory buffer to RTMP without saving to disk
-        """
-        print(f"Streaming {len(self.frame_buffer)} frames from memory")
-        
-        # ffmpeg command to receive frames from stdin
-        ffmpeg_cmd = [
-            'ffmpeg',
-            '-y',  # Overwrite output files
-            '-f', 'rawvideo',
-            '-vcodec', 'rawvideo',
-            '-s', '256x256',  # Adjust to match your frame dimensions
-            '-pix_fmt', 'bgr24',  # Adjust pixel format as needed
-            '-r', '25',  # Adjust to your desired framerate
-            '-i', '-',  # Input from stdin
-            '-c:v', 'libx264',
-            '-preset', 'ultrafast',
-            '-tune', 'zerolatency',
-            '-profile:v', 'baseline',
-            '-level', '3.0',
-            '-pix_fmt', 'yuv420p',
-            '-g', '30',
-            '-b:v', '2048k',
-            '-f', 'flv',
-            '-flvflags', 'no_duration_filesize',
-            rtmp_url
-        ]
-        
-        process = None
-        try:
-            process = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
-            
-            # Stream all frames from memory buffer
-            with self.buffer_lock:
-                for frame in self.frame_buffer:
-                    try:
-                        # Write frame data directly to ffmpeg stdin
-                        process.stdin.write(frame.tobytes())
-                        process.stdin.flush()
-                    except Exception as e:
-                        print(f"Error writing frame to ffmpeg: {e}")
-                        break
-                        
-        except Exception as e:
-            print(f"Error starting ffmpeg process: {e}")
-        finally:
-            if process:
-                process.stdin.close()
-                process.wait()
-                print("Streaming completed")
-       
-    def start_streaming(self, rtmp_url):
-        """
-        Start streaming thread that reads frames from stream_queue and sends to ffmpeg
-        """
-        self.streaming = True
-        self.stream_thread = threading.Thread(target=self._stream_to_ffmpeg, args=(rtmp_url,))
-        self.stream_thread.start()
-    def stop_streaming(self):
-        """
-        Stop the streaming thread
-        """
-        self.streaming = False
-        if self.stream_thread:
-            self.stream_thread.join()
-    def _stream_to_ffmpeg(self, rtmp_url):
-        """
-        Stream frames from queue to ffmpeg
-        """
-        # ffmpeg command to receive frames from stdin and stream to RTMP
-        ffmpeg_cmd = [
-            'ffmpeg',
-            '-re',
-            '-r', '30',
-            '-i', "-",
-            '-c:v', 'libx264',  # 指定视频编码器
-            '-c:a', 'aac',
-            '-preset', 'medium',
-            '-profile:v', 'baseline',
-            '-level', '3.1',
-            '-pix_fmt', 'yuv420p',
-            '-g', '300',
-            '-b:v', '1200k',
-            '-maxrate', '1200k',
-            '-bufsize', '1800k',
-            '-s', '720x1280',
-            '-ar', '16000',
-            '-ac', '1',
-            '-b:a', '64k',
-            '-f', 'flv',
-            '-flags', '+low_delay',
-            rtmp_url
-        ]
-        
-        process = None
-        try:
-            process = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
-            
-            while self.streaming:
-                try:
-                    # Get frame from queue with timeout
-                    frame = self.stream_queue.get(timeout=1)
-                    # Write frame to ffmpeg stdin
-                    process.stdin.write(frame.tobytes())
-                    process.stdin.flush()
-                except queue.Empty:
-                    continue
-                except Exception as e:
-                    print(f"Error streaming frame: {e}")
-                    break
-                    
-        except Exception as e:
-            print(f"Error starting ffmpeg process: {e}")
-        finally:
-            self.streaming = False
-            if process:
-                process.stdin.close()
-                process.wait()
 
 if __name__ == "__main__":
     '''
