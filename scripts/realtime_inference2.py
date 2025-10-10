@@ -316,16 +316,16 @@ class Avatar:
             mask = self.mask_list_cycle[self.idx % (len(self.mask_list_cycle))]
             mask_crop_box = self.mask_coords_list_cycle[self.idx % (len(self.mask_coords_list_cycle))]
             combine_frame = get_image_blending(ori_frame,res_frame,bbox,mask,mask_crop_box)
-
+            print(f"idx={self.idx}")
             if skip_save_images is False:
                 print(f"Saving image {self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png")
                 output_path = f"{self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png"
                 cv2.imwrite(output_path, combine_frame)
             
-            try:
-                self.stream_queue.put(combine_frame)
-            except queue.Full:
-                print("queue is full")
+            # try:
+            #     self.stream_queue.put(combine_frame)
+            # except queue.Full:
+            #     print("queue is full")
                 
             self.idx = self.idx + 1
 
