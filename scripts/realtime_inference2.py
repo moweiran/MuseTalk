@@ -390,7 +390,9 @@ class Avatar:
            
             player.stop()
             time.sleep(10)
-            player2.play()
+            player2.play(audio_path=audio_path, 
+                         avatar_path=self.avatar_path, 
+                         rtmp_url=rtmp_url)
             # Wait for player to finish using event
             print("Waiting for player to finish...")
             if player2.wait_for_completion():
