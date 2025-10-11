@@ -391,10 +391,10 @@ class Avatar:
             
             if stream_pipe:
                 try:
-                    print(f"stream_pipe write combine_frame {combine_frame.tobytes()}")
+                    print(f"stream_pipe write combine_frame {combine_frame}")
                     if player.mp4_thread:
                         player.stop()
-                    stream_pipe.stdin.write(combine_frame.tobytes())
+                    stream_pipe.stdin.write(combine_frame)
                 except BrokenPipeError:
                     print(f"Stream connection broken")
             elif skip_save_images is False:
