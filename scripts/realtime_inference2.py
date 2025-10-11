@@ -503,7 +503,14 @@ class Avatar:
                                     encoder_hidden_states=audio_feature_batch).sample
             pred_latents = pred_latents.to(device=self.device, dtype=self.vae.vae.dtype)
             recon = self.vae.decode_latents(pred_latents)
-            for res_frame in recon:
+            print(f'recon type: {type(recon)}')
+            print(f'recon length: {len(recon)}')
+            if hasattr(recon, 'shape'):
+                print(f'recon shape: {recon.shape}')
+                
+            for j, res_frame in enumerate(recon):
+                print(f'res_frame[{j}] shape: {res_frame.shape}')
+                print(f'res_frame[{j}] dtype: {res_frame.dtype}')
                 res_frame_queue.put(res_frame)
         # Close the queue and sub-thread after all tasks are completed
         
