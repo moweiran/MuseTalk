@@ -164,7 +164,7 @@
 #     def init_model(self):
 #         print("Initializing model...")
 #         ffmpeg_path = "./ffmpeg-4.4-amd64-static/"
-#         gpu_id = 4 # 
+#         gpu_id = 0 # 
 #         vae_type = "sd-vae"
 #         unet_config = "./models/musetalk/musetalk.json"
 #         unet_model_path = "./models/musetalk/pytorch_model.bin"
@@ -609,7 +609,7 @@
 
 #     # args = parser.parse_args()
 #     ffmpeg_path = "./ffmpeg-4.4-amd64-static/"
-#     gpu_id = 4
+#     gpu_id = 0
 #     vae_type = "sd-vae"
 #     unet_config = "./models/musetalk/musetalk.json"
 #     unet_model_path = "./models/musetalk/pytorch_model.bin"
