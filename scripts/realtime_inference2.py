@@ -550,7 +550,7 @@ class Avatar:
             
             # 0.start=============
             player.stop()
-            stream = f"ffmpeg -re -framerate 30 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset medium -profile:v baseline -level 3.1 -pix_fmt yuv420p -g 300 -keyint_min 60 -b:v 1200k -maxrate 1200k -bufsize 1800k -c:a aac -ar 16000 -ac 1 -b:a 64k -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize {rtmp_url}"
+            stream = f"ffmpeg -re -thread_queue_size 512 -framerate 30 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset medium -profile:v baseline -level 4.0 -pix_fmt yuv420p -g 300 -keyint_min 60 -b:v 1200k -maxrate 1200k -bufsize 1800k -c:a aac -ar 16000 -ac 1 -b:a 64k -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize {rtmp_url}"
             os.system(stream)
             # 0.end=============
             
