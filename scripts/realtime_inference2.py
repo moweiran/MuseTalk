@@ -424,6 +424,28 @@ class Avatar:
                 
             self.idx = self.idx + 1
 
+    # 在开始推流前添加验证
+    def verify_av_sync(self, audio_path, image_pattern, expected_fps):
+        """验证音视频同步"""
+        import glob
+        # 检查图片数量
+        image_files = sorted(glob.glob(image_pattern))
+        image_count = len(image_files)
+        
+        # 获取音频时长
+        import librosa
+        audio_data, sr = librosa.load(audio_path, sr=None)
+        audio_duration = len(audio_data) / sr
+        
+        # 计算预期帧数
+        expected_frames = int(audio_duration * expected_fps)
+        
+        print(f"Image frames: {image_count}, Audio duration: {audio_duration:.2f}s, Expected frames: {expected_frames}")
+        
+        if abs(image_count - expected_frames) > expected_fps:  # 允许1秒误差
+            print("WARNING: Audio and video length mismatch!")
+        
+        return image_count, audio_duration
 
     @torch.no_grad()
     def inference(self, audio_path, out_vid_name, fps, skip_save_images, rtmp_url):
@@ -563,13 +585,19 @@ class Avatar:
             
             # 1.start=============
             # Use subprocess instead of os.system for better control
+            # 在推流前调用验证
+            image_count, audio_duration = self.verify_av_sync(
+                audio_path, 
+                f"{self.avatar_path}/tmp/*.png", 
+                fps
+            )
             player.stop()
             stream_cmd = [
                 'ffmpeg',
                 '-re',
                 '-thread_queue_size', '1024',  # 增加线程队列大小
                 # '-r', '30',
-                '-framerate', '30',
+                '-framerate', str(fps),
                 '-f', 'image2',
                 '-i', f'{self.avatar_path}/tmp/%08d.png',
                 '-i', audio_path,
@@ -607,13 +635,13 @@ class Avatar:
                 print(f"Error during streaming: {e}")
             finally:
                 # Ensure process is properly cleaned up
-                # if process and process.poll() is None:
-                #     process.terminate()
-                #     try:
-                #         process.wait(timeout=1)
-                #     except subprocess.TimeoutExpired:
-                #         process.kill()
-                #         process.wait()
+                if process and process.poll() is None:
+                    process.terminate()
+                    try:
+                        process.wait(timeout=1)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
+                        process.wait()
                 print("Streaming process cleaned up")
             # 1.end=======
             
