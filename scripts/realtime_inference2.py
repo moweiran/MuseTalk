@@ -602,13 +602,13 @@ class Avatar:
                 print(f"Error during streaming: {e}")
             finally:
                 # Ensure process is properly cleaned up
-                if process and process.poll() is None:
-                    process.terminate()
-                    try:
-                        process.wait(timeout=5)
-                    except subprocess.TimeoutExpired:
-                        process.kill()
-                        process.wait()
+                # if process and process.poll() is None:
+                #     process.terminate()
+                #     try:
+                #         process.wait(timeout=1)
+                #     except subprocess.TimeoutExpired:
+                #         process.kill()
+                #         process.wait()
                 print("Streaming process cleaned up")
             # 1.end=======
             
