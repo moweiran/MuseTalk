@@ -364,7 +364,7 @@ class Avatar:
         
         return self.streaming_process
         
-    def process_frames(self, res_frame_queue, video_len, skip_save_images, stream_pipe=None):
+    def process_frames(self, res_frame_queue, video_len, skip_save_images):
         print(f'video_len={video_len} skip_save_images={skip_save_images}')
         
         while True:
@@ -389,34 +389,35 @@ class Avatar:
             combine_frame = get_image_blending(ori_frame,res_frame,bbox,mask,mask_crop_box)
             
             
-            if stream_pipe:
-                try:
-                    print(f"stream_pipe write combine_frame {combine_frame}")
-                    if player.mp4_thread:
-                        print("player.mp4_thread stop")
-                        player.stop()
-                    # 确保frame格式正确
-                    if len(combine_frame.shape) == 3 and combine_frame.shape[2] == 3:
-                        # 写入视频帧数据
-                        stream_pipe.stdin.write(combine_frame.tobytes())
-                        # 定期刷新缓冲区
-                        if self.idx % 30 == 0:  # 每30帧刷新一次
-                            stream_pipe.stdin.flush()
-                    else:
-                        print(f"Invalid frame format at index {self.idx}: {combine_frame.shape}")
-                except BrokenPipeError:
-                    print(f"Stream connection broken")
-                except Exception as e:
-                    print(f"Error writing to stream pipe at frame {self.idx}: {e}")
-                    # 检查进程状态
-                    if stream_pipe.poll() is not None:
-                        print(f"FFmpeg process terminated with return code: {stream_pipe.returncode}")
-                        try:
-                            stderr_output = stream_pipe.stderr.read().decode()
-                            print(f"FFmpeg error output: {stderr_output}")
-                        except:
-                            print("Could not read FFmpeg error output")
-            elif skip_save_images is False:
+            # if stream_pipe:
+            #     try:
+            #         print(f"stream_pipe write combine_frame {combine_frame}")
+            #         if player.mp4_thread:
+            #             print("player.mp4_thread stop")
+            #             player.stop()
+            #         # 确保frame格式正确
+            #         if len(combine_frame.shape) == 3 and combine_frame.shape[2] == 3:
+            #             # 写入视频帧数据
+            #             stream_pipe.stdin.write(combine_frame.tobytes())
+            #             # 定期刷新缓冲区
+            #             if self.idx % 30 == 0:  # 每30帧刷新一次
+            #                 stream_pipe.stdin.flush()
+            #         else:
+            #             print(f"Invalid frame format at index {self.idx}: {combine_frame.shape}")
+            #     except BrokenPipeError:
+            #         print(f"Stream connection broken")
+            #     except Exception as e:
+            #         print(f"Error writing to stream pipe at frame {self.idx}: {e}")
+            #         # 检查进程状态
+            #         if stream_pipe.poll() is not None:
+            #             print(f"FFmpeg process terminated with return code: {stream_pipe.returncode}")
+            #             try:
+            #                 stderr_output = stream_pipe.stderr.read().decode()
+            #                 print(f"FFmpeg error output: {stderr_output}")
+            #             except:
+            #                 print("Could not read FFmpeg error output")
+            # elif skip_save_images is False:
+            if skip_save_images is True:
                 print(f"Saving image {self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png")
                 output_path = f"{self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png"
                 cv2.imwrite(output_path, combine_frame)
@@ -451,39 +452,38 @@ class Avatar:
         res_frame_queue = queue.Queue()
         self.idx = 0
         # 如果启用了流媒体，设置流媒体进程
-        stream_pipe = None
+        # stream_pipe = None
         
-        
-        if rtmp_url:
-            # 获取帧尺寸（使用第一帧作为参考）
-            sample_frame = self.frame_list_cycle[0]
-            height, width = sample_frame.shape[:2]
-            print(f"Setting up streaming to {rtmp_url} with frame size {width}x{height}")
-            stream_pipe = self.setup_streaming(rtmp_url, fps, width, height)
+        # if rtmp_url:
+        #     # 获取帧尺寸（使用第一帧作为参考）
+        #     sample_frame = self.frame_list_cycle[0]
+        #     height, width = sample_frame.shape[:2]
+        #     print(f"Setting up streaming to {rtmp_url} with frame size {width}x{height}")
+        #     stream_pipe = self.setup_streaming(rtmp_url, fps, width, height)
             
-            # 提取音频数据并发送到流媒体进程
-            audio_extract_process = subprocess.Popen([
-                'ffmpeg',
-                '-i', audio_path,
-                '-f', 'aac',
-                'pipe:1'
-            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        #     # 提取音频数据并发送到流媒体进程
+        #     audio_extract_process = subprocess.Popen([
+        #         'ffmpeg',
+        #         '-i', audio_path,
+        #         '-f', 'aac',
+        #         'pipe:1'
+        #     ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             
-            audio_data, _ = audio_extract_process.communicate()
+        #     audio_data, _ = audio_extract_process.communicate()
             
-            # 在另一个线程中发送音频数据
-            def send_audio_data():
-                if stream_pipe:
-                    try:
-                        stream_pipe.stdin.write(audio_data)
-                    except:
-                        pass
+        #     # 在另一个线程中发送音频数据
+        #     def send_audio_data():
+        #         if stream_pipe:
+        #             try:
+        #                 stream_pipe.stdin.write(audio_data)
+        #             except:
+        #                 pass
                         
-            audio_thread = threading.Thread(target=send_audio_data)
-            audio_thread.start()
+        #     audio_thread = threading.Thread(target=send_audio_data)
+        #     audio_thread.start()
             
         # Create a sub-thread and start it
-        process_thread = threading.Thread(target=self.process_frames, args=(res_frame_queue, video_num, skip_save_images, stream_pipe))
+        process_thread = threading.Thread(target=self.process_frames, args=(res_frame_queue, video_num, skip_save_images))
         print(f"processing start")
         process_thread.start()
         print(f"processing start2")
@@ -512,12 +512,12 @@ class Avatar:
         print(f"processing join2")
         
         # 关闭流媒体进程
-        if stream_pipe:
-            try:
-                stream_pipe.stdin.close()
-                stream_pipe.wait()
-            except:
-                pass
+        # if stream_pipe:
+        #     try:
+        #         stream_pipe.stdin.close()
+        #         stream_pipe.wait()
+        #     except:
+        #         pass
 
         if self.skip_save_images is True:
             print('Total process time of {} frames without saving images = {}s'.format(
@@ -533,7 +533,7 @@ class Avatar:
             # 测试用例
             # stream = f"ffmpeg -re -framerate 25 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -pix_fmt yuv420p -g 30 -b:v 2048k -c:a aac -b:a 128k -ar 44100 -ac 2 -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize {rtmp_url}"
            
-            # player.stop()
+            player.stop()
             # time.sleep(1)
             # player2.play(audio_path=audio_path, 
             #              avatar_path=self.avatar_path, 
@@ -556,55 +556,55 @@ class Avatar:
             
             # 1.start=============
             # Use subprocess instead of os.system for better control
-            # stream_cmd = [
-            #     'ffmpeg',
-            #     '-re',
-            #     '-thread_queue_size', '512',  # 增加线程队列大小
-            #     '-framerate', '30',
-            #     '-f', 'image2',
-            #     '-i', f'{self.avatar_path}/tmp/%08d.png',
-            #     '-i', audio_path,
-            #     '-c:v', 'libx264',
-            #     '-preset', 'medium',
-            #     '-profile:v', 'baseline',
-            #     '-level', '3.1',
-            #     '-pix_fmt', 'yuv420p',
-            #     '-g', '300',
-            #     '-keyint_min', '60',
-            #     '-b:v', '1200k',
-            #     '-maxrate', '1200k',
-            #     '-bufsize', '1800k',
-            #     '-c:a', 'aac',
-            #     '-ar', '16000',
-            #     '-ac', '1',
-            #     '-b:a', '64k',
-            #     '-map', '0:v:0',
-            #     '-map', '1:a:0',
-            #     '-shortest',
-            #     '-f', 'flv',
-            #     '-flvflags', 'no_duration_filesize',
-            #     rtmp_url
-            # ]
+            stream_cmd = [
+                'ffmpeg',
+                '-re',
+                '-thread_queue_size', '512',  # 增加线程队列大小
+                '-framerate', '30',
+                '-f', 'image2',
+                '-i', f'{self.avatar_path}/tmp/%08d.png',
+                '-i', audio_path,
+                '-c:v', 'libx264',
+                '-preset', 'medium',
+                '-profile:v', 'baseline',
+                '-level', '3.1',
+                '-pix_fmt', 'yuv420p',
+                '-g', '300',
+                '-keyint_min', '60',
+                '-b:v', '1200k',
+                '-maxrate', '1200k',
+                '-bufsize', '1800k',
+                '-c:a', 'aac',
+                '-ar', '16000',
+                '-ac', '1',
+                '-b:a', '64k',
+                '-map', '0:v:0',
+                '-map', '1:a:0',
+                '-shortest',
+                '-f', 'flv',
+                '-flvflags', 'no_duration_filesize',
+                rtmp_url
+            ]
             
-            # process = None
-            # try:
-            #     # Start the ffmpeg process
-            #     process = subprocess.Popen(stream_cmd)
-            #     # Wait for completion
-            #     process.wait()
-            #     print("Streaming completed successfully")
-            # except Exception as e:
-            #     print(f"Error during streaming: {e}")
-            # finally:
-            #     # Ensure process is properly cleaned up
-            #     if process and process.poll() is None:
-            #         process.terminate()
-            #         try:
-            #             process.wait(timeout=5)
-            #         except subprocess.TimeoutExpired:
-            #             process.kill()
-            #             process.wait()
-            #     print("Streaming process cleaned up")
+            process = None
+            try:
+                # Start the ffmpeg process
+                process = subprocess.Popen(stream_cmd)
+                # Wait for completion
+                process.wait()
+                print("Streaming completed successfully")
+            except Exception as e:
+                print(f"Error during streaming: {e}")
+            finally:
+                # Ensure process is properly cleaned up
+                if process and process.poll() is None:
+                    process.terminate()
+                    try:
+                        process.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
+                        process.wait()
+                print("Streaming process cleaned up")
             # 1.end=======
             
             # 2.图片buffer 流模式开始
