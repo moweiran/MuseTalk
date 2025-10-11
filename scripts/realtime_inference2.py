@@ -393,8 +393,9 @@ class Avatar:
                 try:
                     print(f"stream_pipe write combine_frame {combine_frame}")
                     if player.mp4_thread:
+                        print("player.mp4_thread stop")
                         player.stop()
-                    stream_pipe.stdin.write(combine_frame)
+                    stream_pipe.stdin.write(combine_frame.tobytes())
                 except BrokenPipeError:
                     print(f"Stream connection broken")
             elif skip_save_images is False:
@@ -439,6 +440,7 @@ class Avatar:
             # 获取帧尺寸（使用第一帧作为参考）
             sample_frame = self.frame_list_cycle[0]
             height, width = sample_frame.shape[:2]
+            print(f"Setting up streaming to {rtmp_url} with frame size {width}x{height}")
             stream_pipe = self.setup_streaming(rtmp_url, fps, width, height)
             
             # 提取音频数据并发送到流媒体进程
@@ -484,7 +486,6 @@ class Avatar:
             pred_latents = pred_latents.to(device=self.device, dtype=self.vae.vae.dtype)
             recon = self.vae.decode_latents(pred_latents)
             for res_frame in recon:
-                print(f"recon idx={self.idx}")
                 res_frame_queue.put(res_frame)
         # Close the queue and sub-thread after all tasks are completed
         
