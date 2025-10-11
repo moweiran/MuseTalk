@@ -495,6 +495,7 @@ class Avatar:
         res_frame_list = []
 
         for i, (whisper_batch, latent_batch) in enumerate(tqdm(gen, total=int(np.ceil(float(video_num) / self.batch_size)))):
+            
             audio_feature_batch = self.pe(whisper_batch.to(self.device))
             latent_batch = latent_batch.to(device=self.device, dtype=self.unet.model.dtype)
 
@@ -503,7 +504,7 @@ class Avatar:
                                     encoder_hidden_states=audio_feature_batch).sample
             pred_latents = pred_latents.to(device=self.device, dtype=self.vae.vae.dtype)
             recon = self.vae.decode_latents(pred_latents)
-            print(f'recon length: {len(recon)}')
+            print(f'recon:[{i}] length: {len(recon)}')
                 
             for j, res_frame in enumerate(recon):
                 print(f'res_frame[{j}] len: {len(res_frame)}')
