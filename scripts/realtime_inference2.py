@@ -503,14 +503,10 @@ class Avatar:
                                     encoder_hidden_states=audio_feature_batch).sample
             pred_latents = pred_latents.to(device=self.device, dtype=self.vae.vae.dtype)
             recon = self.vae.decode_latents(pred_latents)
-            print(f'recon type: {type(recon)}')
             print(f'recon length: {len(recon)}')
-            if hasattr(recon, 'shape'):
-                print(f'recon shape: {recon.shape}')
                 
             for j, res_frame in enumerate(recon):
-                print(f'res_frame[{j}] shape: {res_frame.shape}')
-                print(f'res_frame[{j}] dtype: {res_frame.dtype}')
+                print(f'res_frame[{j}] len: {len(res_frame)}')
                 res_frame_queue.put(res_frame)
         # Close the queue and sub-thread after all tasks are completed
         
@@ -570,8 +566,9 @@ class Avatar:
             stream_cmd = [
                 'ffmpeg',
                 '-re',
-                '-thread_queue_size', '512',  # 增加线程队列大小
-                '-r', '30',
+                '-thread_queue_size', '1024',  # 增加线程队列大小
+                # '-r', '30',
+                '-framerate', '30',
                 '-f', 'image2',
                 '-i', f'{self.avatar_path}/tmp/%08d.png',
                 '-i', audio_path,
