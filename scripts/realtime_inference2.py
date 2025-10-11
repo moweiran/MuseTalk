@@ -391,6 +391,9 @@ class Avatar:
             
             if stream_pipe:
                 try:
+                    print(f"stream_pipe write combine_frame {combine_frame.tobytes()}")
+                    if player.mp4_thread:
+                        player.stop()
                     stream_pipe.stdin.write(combine_frame.tobytes())
                 except BrokenPipeError:
                     print(f"Stream connection broken")
@@ -430,6 +433,7 @@ class Avatar:
         self.idx = 0
         # 如果启用了流媒体，设置流媒体进程
         stream_pipe = None
+        
         
         if rtmp_url:
             # 获取帧尺寸（使用第一帧作为参考）
