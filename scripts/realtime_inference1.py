@@ -733,10 +733,11 @@ class Avatar:
 
             # os.remove(f"{self.avatar_path}/temp.mp4")
             shutil.rmtree(f"{self.avatar_path}/tmp")
-            print(f"result is save to {output_vid}")
+            # print(f"result is save to {output_vid}")
+            player.play(rtmp_url)
             # rtmps://rtmp.icommu.cn/live/livestream
-            stream = f"ffmpeg -re -stream_loop -1 -i {output_vid} -c copy -f flv {rtmp_url}"
-            os.system(stream)
+            # stream = f"ffmpeg -re -stream_loop -1 -i {output_vid} -c copy -f flv {rtmp_url}"
+            # os.system(stream)
         print("\n")
 
 if __name__ == "__main__":
