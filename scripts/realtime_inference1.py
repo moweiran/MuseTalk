@@ -706,8 +706,8 @@ class Avatar:
                 '-ar', '16000',
                 '-ac', '1',
                 '-b:a', '64k',
-                # '-map', '1:v:0',  # Map video from the MP4 file (index 1)
-                '-map', '0:a:0',  # Map audio from the audio file (index 0)
+                '-map', '1:v:0',  # Map video from the MP4 file (index 1)
+                # '-map', '0:a:0',  # Map audio from the audio file (index 0)
                 '-shortest',
                 '-f', 'flv',
                 '-flvflags', 'no_duration_filesize',
