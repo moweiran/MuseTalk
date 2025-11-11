@@ -4,7 +4,7 @@ import asyncio
 import signal
 import sys
 from MuseTalk import MuseTalk_RealTime
-from scripts.realtime_inference2 import Avatar
+from scripts.realtime_inference1 import Avatar
 from datetime import datetime
 import requests
 import os
@@ -122,7 +122,8 @@ def inference(url:str, rtmp_url:str,filename:str = None):
             filepath, 
             out_vid_name=None,
             fps=25, 
-            skip_save_images=True, 
+            # skip_save_images=True, 
+            skip_save_images=False,
             rtmp_url=rtmp_url
         )
         print(f"end of hello {datetime.now()}")
