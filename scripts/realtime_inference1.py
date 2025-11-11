@@ -680,7 +680,7 @@ class Avatar:
                 '-re',
                 '-thread_queue_size', '1024',  # 增加线程队列大小
                 # '-r', '30',
-                '-framerate', str(fps),
+                # '-framerate', str(fps),
                 '-i', audio_path,
                 '-i', f'{self.avatar_path}/temp.mp4',
                 '-c:v', 'libx264',
@@ -698,8 +698,8 @@ class Avatar:
                 '-ar', '16000',
                 '-ac', '1',
                 '-b:a', '64k',
-                '-map', '0:v:0',
-                '-map', '1:a:0',
+                '-map', '1:v:0',  # Map video from the MP4 file (index 1)
+                '-map', '0:a:0',  # Map audio from the audio file (index 0)
                 '-shortest',
                 '-f', 'flv',
                 '-flvflags', 'no_duration_filesize',
