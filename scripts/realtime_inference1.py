@@ -388,35 +388,6 @@ class Avatar:
             mask_crop_box = self.mask_coords_list_cycle[self.idx % (len(self.mask_coords_list_cycle))]
             combine_frame = get_image_blending(ori_frame,res_frame,bbox,mask,mask_crop_box)
             
-            
-            # if stream_pipe:
-            #     try:
-            #         print(f"stream_pipe write combine_frame {combine_frame}")
-            #         if player.mp4_thread:
-            #             print("player.mp4_thread stop")
-            #             player.stop()
-            #         # 确保frame格式正确
-            #         if len(combine_frame.shape) == 3 and combine_frame.shape[2] == 3:
-            #             # 写入视频帧数据
-            #             stream_pipe.stdin.write(combine_frame.tobytes())
-            #             # 定期刷新缓冲区
-            #             if self.idx % 30 == 0:  # 每30帧刷新一次
-            #                 stream_pipe.stdin.flush()
-            #         else:
-            #             print(f"Invalid frame format at index {self.idx}: {combine_frame.shape}")
-            #     except BrokenPipeError:
-            #         print(f"Stream connection broken")
-            #     except Exception as e:
-            #         print(f"Error writing to stream pipe at frame {self.idx}: {e}")
-            #         # 检查进程状态
-            #         if stream_pipe.poll() is not None:
-            #             print(f"FFmpeg process terminated with return code: {stream_pipe.returncode}")
-            #             try:
-            #                 stderr_output = stream_pipe.stderr.read().decode()
-            #                 print(f"FFmpeg error output: {stderr_output}")
-            #             except:
-            #                 print("Could not read FFmpeg error output")
-            # elif skip_save_images is False:
             if skip_save_images is False:
                 print(f"Saving image {self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png")
                 output_path = f"{self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png"
