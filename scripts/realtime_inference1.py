@@ -661,7 +661,7 @@ class Avatar:
                 video_num,
                 time.time() - start_time))
 
-        if out_vid_name is not None and self.skip_save_images is False:
+        if self.skip_save_images is False:
             # optional
             cmd_img2video = f"ffmpeg -y -v warning -r {fps} -f image2 -i {self.avatar_path}/tmp/%08d.png -vcodec libx264 -vf format=yuv420p -crf 18 {self.avatar_path}/temp.mp4"
             print(cmd_img2video)
