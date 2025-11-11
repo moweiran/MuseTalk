@@ -120,7 +120,7 @@ def inference(url:str, rtmp_url:str,filename:str = None):
         
         avatar_instance.inference(
             filepath, 
-            out_vid_name=None,
+            out_vid_name=filename,
             fps=25, 
             # skip_save_images=True, 
             skip_save_images=False,
