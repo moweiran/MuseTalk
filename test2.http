@@ -3,8 +3,8 @@
 GET {{apiHost}}/hello HTTP/1.1
 Content-Type: application/json; charset=UTF-8
 
-GET {{apiHost}}/welcome rtmp_url=rtmps://rtmp.icommu.cn:4433/live/livestream HTTP/1.1
-
+### welcome
+GET {{apiHost}}/welcome?rtmp_url=rtmps://rtmp.icommu.cn:4433/live/livestream HTTP/1.1
 Content-Type: application/json; charset=UTF-8
 
 ### audio1
