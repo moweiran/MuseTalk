@@ -126,33 +126,47 @@ ps aux | grep fast_api.py
 
 kill -9 <process_id>
 
-# 查看log
+# 查看 log
+
 tail -f fastapi.log
 
 http://183.63.45.52:5001/inference?url=https://icommu-prod-1326448221.cos.ap-guangzhou.myqcloud.com/asserts/1b829bdcf4f044e497af5a1d8070b6ac.mp3&rtmp_url=rtmps://rtmp.icommu.cn/live/livestream
 
 lsof -i :5001
 
-# 检查UFW状态
+# 检查 UFW 状态
+
 sudo ufw status
 
-# 启用UFW（如果未启用）
+# 启用 UFW（如果未启用）
+
 sudo ufw enable
 
-# 开放5002端口
-sudo ufw allow 5002
+# 开放 5001 端口
+
+sudo ufw allow 5001
 
 # 或者指定协议
-sudo ufw allow 5002/tcp
+
+sudo ufw allow 5001/tcp
+
 # 或
-sudo ufw allow 5002/udp
+
+sudo ufw allow 5001/udp
 
 # 重新加载防火墙规则
+
 sudo ufw reload
 
 # 验证端口是否已开放
+
 sudo ufw status
 
-
-echo "查找占用GPU的进程:"
+echo "查找占用 GPU 的进程:"
 nvidia-smi --query-compute-apps=pid,process_name,used_memory --format=csv
+
+用 ffmpeg 测试 audio_0.mp4 推流服务器是否正常
+ffmpeg -re -stream_loop -1 -i audio_0.mp4 -c copy -f flv rtmps://rtmp.icommu.cn:4433/live/livestream
+
+用 ffplay 播放推流服务器
+ffplay -i rtmps://rtmp.icommu.cn:4433/live/livestream
