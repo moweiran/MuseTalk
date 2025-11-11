@@ -4,10 +4,26 @@ import subprocess
 import threading
 import time
 class Player:
+    _instance = None
+    _lock = threading.Lock()
+
+    def __new__(cls):
+        if cls._instance is None:
+            with cls._lock:
+                # Double-check locking pattern
+                if cls._instance is None:
+                    cls._instance = super(Player, cls).__new__(cls)
+        return cls._instance
+    
     def __init__(self):
+        # Ensure initialization only happens once
+        if hasattr(self, 'initialized'):
+            return
+        
         self.mp4_thread = None # 用于存储线程对象
         self.stop_event = threading.Event()  # 用于控制线程停止
         self.current_rtmp_url = None
+        self.initialized = True
     
     def start_streaming(self, rtmp_url:str):
         """

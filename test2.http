@@ -3,39 +3,43 @@
 GET {{apiHost}}/hello HTTP/1.1
 Content-Type: application/json; charset=UTF-8
 
+GET {{apiHost}}/welcome rtmp_url=rtmps://rtmp.icommu.cn:4433/live/livestream HTTP/1.1
+
+Content-Type: application/json; charset=UTF-8
+
 ### audio1
-# GET {{apiHost}}/download-audio?url=https://disk.sample.cat/samples/wav/suzume_no_tojimari.wav&rtmp_url=rtmps://rtmp.icommu.cn/live/livestream HTTP/1.1
+# GET {{apiHost}}/download-audio?url=https://disk.sample.cat/samples/wav/suzume_no_tojimari.wav&rtmp_url=rtmps://rtmp.icommu.cn:4433/live/livestream HTTP/1.1
 # Content-Type: application/json; charset=UTF-8
 
 # ### audio2
-# GET {{apiHost}}/inference?url=https://disk.sample.cat/samples/wav/suzume_no_tojimari.wav&rtmp_url=rtmps://rtmp.icommu.cn/live/livestream HTTP/1.1
+# GET {{apiHost}}/inference?url=https://disk.sample.cat/samples/wav/suzume_no_tojimari.wav&rtmp_url=rtmps://rtmp.icommu.cn:4433/live/livestream HTTP/1.1
 # Content-Type: application/json; charset=UTF-8
 
 ### audio3 ok
-GET {{apiHost}}/inference?url=https://icommu-prod-1326448221.cos.ap-guangzhou.myqcloud.com/ai-voice-asserts/c2e281a769d34c77be7b57cd8769323e.mp3&rtmp_url=rtmps://rtmp.icommu.cn/live/livestream HTTP/1.1
+GET {{apiHost}}/inference?url=https://icommu-prod-1326448221.cos.ap-guangzhou.myqcloud.com/ai-voice-asserts/c2e281a769d34c77be7b57cd8769323e.mp3&rtmp_url=rtmps://rtmp.icommu.cn:4433/live/livestream HTTP/1.1
 Content-Type: application/json; charset=UTF-8
 
 ### audio4 ok
-GET {{apiHost}}/inference?url=https://icommu-dev-1326448221.cos.ap-guangzhou.myqcloud.com/ai-voice-asserts/output_audio.wav&rtmp_url=rtmps://rtmp.icommu.cn/live/livestream HTTP/1.1
+GET {{apiHost}}/inference?url=https://icommu-dev-1326448221.cos.ap-guangzhou.myqcloud.com/ai-voice-asserts/output_audio.wav&rtmp_url=rtmps://rtmp.icommu.cn:4433/live/livestream HTTP/1.1
 Content-Type: application/json; charset=UTF-8
 
 ### audio5 error
-# GET {{apiHost}}/inference?url=https://icommu-prod-1326448221.cos.ap-guangzhou.myqcloud.com/ai-voice-asserts/371c627a53c24a5c847252e4ff158c18.mp3&rtmp_url=rtmps://rtmp.icommu.cn/live/livestream HTTP/1.1
+# GET {{apiHost}}/inference?url=https://icommu-prod-1326448221.cos.ap-guangzhou.myqcloud.com/ai-voice-asserts/371c627a53c24a5c847252e4ff158c18.mp3&rtmp_url=rtmps://rtmp.icommu.cn:4433/live/livestream HTTP/1.1
 # Content-Type: application/json; charset=UTF-8
 
 ### audio6
-GET {{apiHost}}/inference?url=https://icommu-prod-1326448221.cos.ap-guangzhou.myqcloud.com/asserts/267697d44b41464e9028727affdb1dd0.mp3&rtmp_url=rtmps://rtmp.icommu.cn/live/livestream HTTP/1.1
+GET {{apiHost}}/inference?url=https://icommu-prod-1326448221.cos.ap-guangzhou.myqcloud.com/asserts/267697d44b41464e9028727affdb1dd0.mp3&rtmp_url=rtmps://rtmp.icommu.cn:4433/live/livestream HTTP/1.1
 Content-Type: application/json; charset=UTF-8
 
 ### audio7
 
-GET {{apiHost}}/inference?url=https://icommu-prod-1326448221.cos.ap-guangzhou.myqcloud.com/asserts/1926668e532e4382be9818dda63b2f73.mp3&rtmp_url=rtmps://rtmp.icommu.cn/live/livestream HTTP/1.1
+GET {{apiHost}}/inference?url=https://icommu-prod-1326448221.cos.ap-guangzhou.myqcloud.com/asserts/1926668e532e4382be9818dda63b2f73.mp3&rtmp_url=rtmps://rtmp.icommu.cn:4433/live/livestream HTTP/1.1
 Content-Type: application/json; charset=UTF-8
 
 ### audio8
-GET {{apiHost}}/inference?url=https://icommu-prod-1326448221.cos.ap-guangzhou.myqcloud.com/asserts/1b829bdcf4f044e497af5a1d8070b6ac.mp3&rtmp_url=rtmps://rtmp.icommu.cn/live/livestream HTTP/1.1
+GET {{apiHost}}/inference?url=https://icommu-prod-1326448221.cos.ap-guangzhou.myqcloud.com/asserts/1b829bdcf4f044e497af5a1d8070b6ac.mp3&rtmp_url=rtmps://rtmp.icommu.cn:4433/live/livestream HTTP/1.1
 Content-Type: application/json; charset=UTF-8
 
 ### test 2
-# GET http://183.63.45.52:5001/inference?url=https://icommu-prod-1326448221.cos.ap-guangzhou.myqcloud.com/asserts/1b829bdcf4f044e497af5a1d8070b6ac.mp3&rtmp_url=rtmps://rtmp.icommu.cn/live/livestream HTTP/1.1
+# GET http://183.63.45.52:5001/inference?url=https://icommu-prod-1326448221.cos.ap-guangzhou.myqcloud.com/asserts/1b829bdcf4f044e497af5a1d8070b6ac.mp3&rtmp_url=rtmps://rtmp.icommu.cn:4433/live/livestream HTTP/1.1
 # Content-Type: application/json; charset=UTF-8

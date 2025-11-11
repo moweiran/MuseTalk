@@ -170,3 +170,5 @@ ffmpeg -re -stream_loop -1 -i audio_0.mp4 -c copy -f flv rtmps://rtmp.icommu.cn:
 
 用 ffplay 播放推流服务器
 ffplay -i rtmps://rtmp.icommu.cn:4433/live/livestream
+
+1. 后端接口，先调用 welcome 接口，传入 rtmp_url, 播放还原视频流

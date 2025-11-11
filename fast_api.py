@@ -10,6 +10,7 @@ import requests
 import os
 from urllib.parse import urlparse, unquote
 import posixpath
+from player import Player
 
 musetalker = MuseTalk_RealTime()
 app = FastAPI()
@@ -20,6 +21,8 @@ AUDIO_DIR = "data/audio"
 os.makedirs(AUDIO_DIR, exist_ok=True)
 #  创建Avatar实例
 avatar_instance = None
+
+player = Player()
 
 @app.on_event("startup")
 async def startup_event():
@@ -47,7 +50,6 @@ def hello():
     musetalker.sayHello()   
     return {"message": "Hello World from FastAPI!"}
 
-
 def get_filename_from_url(url):
     """
     从URL中提取文件名
@@ -73,6 +75,15 @@ def train_avatar(avatar:str):
         bbox_shift=0,
         batch_size=20,
         preparation=True)
+    
+@app.get("/welcome")
+def playWelcome(rtmp_url:str):
+    """
+    播放欢迎音
+    """
+    player.play(rtmp_url)
+    return {"message": "Welcome video is playing."}
+
 
 @app.get("/inference")
 def inference(url:str, rtmp_url:str,filename:str = None):
