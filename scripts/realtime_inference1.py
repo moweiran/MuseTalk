@@ -417,7 +417,7 @@ class Avatar:
             #             except:
             #                 print("Could not read FFmpeg error output")
             # elif skip_save_images is False:
-            if skip_save_images is True:
+            if skip_save_images is False:
                 print(f"Saving image {self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png")
                 output_path = f"{self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png"
                 cv2.imwrite(output_path, combine_frame)
