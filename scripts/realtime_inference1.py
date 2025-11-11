@@ -672,7 +672,7 @@ class Avatar:
 
             # print(cmd_combine_audio)
             # os.system(cmd_combine_audio)
-
+            player.stop()
             combine_audio_cmd = [
                 'ffmpeg',
                 '-y',
