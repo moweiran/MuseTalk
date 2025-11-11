@@ -663,12 +663,12 @@ class Avatar:
 
         if out_vid_name is not None and self.skip_save_images is False:
             # optional
-            cmd_img2video = f"ffmpeg -y -v warning -r {fps} -f image2 -i {self.avatar_path}/tmp/%08d.png -vcodec libx264 -vf format=yuv420p -crf 18 {self.avatar_path}/temp.mp4"
+            cmd_img2video = f"ffmpeg -y -v warning -r {fps} -f image2 -i {self.avatar_path}/tmp/%08d.png -c:v libx264 -preset medium -profile:v baseline -level 3.1 -pix_fmt yuv420p -g 300 -b:v 1200k -keyint_min 60 -maxrate 1200k -bufsize 1800k -s 720x1280 -vf format=yuv420p {self.avatar_path}/temp.mp4"
             print(cmd_img2video)
             os.system(cmd_img2video)
 
             output_vid = os.path.join(self.video_out_path, out_vid_name + ".mp4")  # on
-            cmd_combine_audio = f"ffmpeg -y -v warning -i {audio_path} -i {self.avatar_path}/temp.mp4 {output_vid}"
+            cmd_combine_audio = f"ffmpeg -y -v warning -i {audio_path} -i {self.avatar_path}/temp.mp4 -c:a aac -ar 16000 -ac 1 -b:a 64k -shortest {output_vid}"
 
             print(cmd_combine_audio)
             os.system(cmd_combine_audio)
@@ -681,60 +681,15 @@ class Avatar:
             # stream = f"ffmpeg -re -stream_loop -1 -i {output_vid} -c copy -f flv {rtmp_url}"
             # os.system(stream)
             player.stop()
-            # combine_audio_cmd = [
-            #     'ffmpeg',
-            #     '-y',
-            #     '-v', 'warning',
-            #     '-re',
-            #     '-thread_queue_size', '1024',  # 增加线程队列大小
-            #     # '-r', '30',
-            #     # '-framerate', str(fps),
-            #     # '-i', audio_path,
-            #     '-i', output_vid,
-            #     # '-c', 'copy',      # Copy streams without re-encoding for better performance
-            #     '-c:v', 'libx264',
-            #     '-preset', 'medium',
-            #     '-profile:v', 'baseline',
-            #     '-level', '3.1',
-            #     '-pix_fmt', 'yuv420p',
-            #     '-g', '300',
-            #     '-b:v', '1200k',
-            #     '-keyint_min', '60',
-            #     '-maxrate', '1200k',
-            #     '-bufsize', '1800k',
-            #     '-s', '720x1280',
-            #     '-c:a', 'aac',
-            #     '-ar', '16000',
-            #     '-ac', '1',
-            #     '-b:a', '64k',
-            #     '-shortest',
-            #     '-f', 'flv',
-            #     '-flvflags', 'no_duration_filesize',
-            #     rtmp_url
-            # ]
+            # Now we can use simple stream copy for RTMP streaming since the video is already properly encoded
             combine_audio_cmd = [
                 'ffmpeg',
                 '-y',
                 '-v', 'warning',
-                '-re',
-                '-thread_queue_size', '1024',  # 增加线程队列大小
-                '-i', output_vid,
-                '-c:v', 'libx264',
-                '-preset', 'medium',
-                '-profile:v', 'baseline',
-                '-level', '3.1',
-                '-pix_fmt', 'yuv420p',
-                '-g', '300',
-                '-b:v', '1200k',
-                '-keyint_min', '60',
-                '-maxrate', '1200k',
-                '-bufsize', '1800k',
-                '-s', '720x1280',
-                '-c:a', 'aac',
-                '-ar', '16000',
-                '-ac', '1',
-                '-b:a', '64k',
-                '-shortest',
+                '-re',  # Read input at native frame rate (important for streaming)
+                '-thread_queue_size', '1024',
+                '-i', output_vid,  # Only input is the complete video file with audio
+                '-c', 'copy',      # Copy streams without re-encoding for better performance
                 '-f', 'flv',
                 '-flvflags', 'no_duration_filesize',
                 rtmp_url
