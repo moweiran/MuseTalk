@@ -716,10 +716,25 @@ class Avatar:
                 'ffmpeg',
                 '-y',
                 '-v', 'warning',
-                '-re',  # Read input at native frame rate (important for streaming)
-                '-thread_queue_size', '1024',
-                '-i', output_vid,  # Only input is the complete video file with audio
-                '-c', 'copy',      # Copy streams without re-encoding for better performance
+                '-re',
+                '-thread_queue_size', '1024',  # 增加线程队列大小
+                '-i', output_vid,
+                '-c:v', 'libx264',
+                '-preset', 'medium',
+                '-profile:v', 'baseline',
+                '-level', '3.1',
+                '-pix_fmt', 'yuv420p',
+                '-g', '300',
+                '-b:v', '1200k',
+                '-keyint_min', '60',
+                '-maxrate', '1200k',
+                '-bufsize', '1800k',
+                '-s', '720x1280',
+                '-c:a', 'aac',
+                '-ar', '16000',
+                '-ac', '1',
+                '-b:a', '64k',
+                '-shortest',
                 '-f', 'flv',
                 '-flvflags', 'no_duration_filesize',
                 rtmp_url
