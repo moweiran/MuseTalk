@@ -619,15 +619,9 @@ class Avatar:
             cmd_combine_audio = f"ffmpeg -y -v warning -i {audio_path} -i {self.avatar_path}/temp.mp4 -c:a aac -ar 16000 -ac 1 -b:a 64k -shortest {output_vid}"
 
             print(cmd_combine_audio)
-            os.system(cmd_combine_audio)
+            os.system(cmd_combine_audio)#改用subprocess来处理
             
-            # os.remove(f"{self.avatar_path}/temp.mp4")
-            shutil.rmtree(f"{self.avatar_path}/tmp")
-            # print(f"result is save to {output_vid}")
-            # player.play(rtmp_url)
-            # rtmps://rtmp.icommu.cn/live/livestream
-            # stream = f"ffmpeg -re -stream_loop -1 -i {output_vid} -c copy -f flv {rtmp_url}"
-            # os.system(stream)
+            
             player.stop()
             # Now we can use simple stream copy for RTMP streaming since the video is already properly encoded
             combine_audio_cmd = [
@@ -642,29 +636,11 @@ class Avatar:
             ]
 
             print("Combining audio and video...")
-            process = None
-            try:
-                # Start the ffmpeg process
-                process = subprocess.Popen(combine_audio_cmd)
-                # Wait for completion
-                process.wait()
-                if process.returncode == 0:
-                    print("Audio combining completed successfully")
-                else:
-                    print(f"Audio combining failed with return code: {process.returncode}")
-            except Exception as e:
-                print(f"Error during audio combining: {e}")
-            finally:
-                # Ensure process is properly cleaned up
-                if process and process.poll() is None:
-                    process.terminate()
-                    try:
-                        process.wait(timeout=5)
-                        os.remove(f"{self.avatar_path}/temp.mp4")
-                    except subprocess.TimeoutExpired:
-                        process.kill()
-                        process.wait()
-                print("Audio combining process cleaned up")    
+            process = subprocess.Popen(combine_audio_cmd)
+            # Wait for completion
+            process.wait()
+            if os.path.exists(f"{self.avatar_path}/temp.mp4"):
+                os.remove(f"{self.avatar_path}/temp.mp4")
             player.play(rtmp_url)
         print("\n")
 
