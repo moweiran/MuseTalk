@@ -4,7 +4,7 @@ import asyncio
 import signal
 import sys
 from MuseTalk import MuseTalk_RealTime
-from scripts.realtime_inference1_1 import Avatar
+from scripts.realtime_inference1_1_1 import Avatar
 from datetime import datetime
 import requests
 import os
