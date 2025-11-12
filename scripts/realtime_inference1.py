@@ -684,7 +684,7 @@ class Avatar:
                 if process and process.poll() is None:
                     process.terminate()
                     try:
-                        process.wait(timeout=5)
+                        process.wait()
                         os.remove(f"{self.avatar_path}/temp.mp4")
                     except subprocess.TimeoutExpired:
                         process.kill()

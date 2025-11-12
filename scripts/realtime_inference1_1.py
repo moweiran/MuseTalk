@@ -526,8 +526,6 @@ class Avatar:
             # ]
             combine_audio_cmd = [
                 'ffmpeg',
-                '-y',
-                '-v', 'warning',
                 '-re',  # Read input at native frame rate (important for streaming)
                 '-thread_queue_size', '1024',
                 '-i', output_vid,  # Only input is the complete video file with audio
@@ -553,6 +551,11 @@ class Avatar:
             except Exception as e:
                 print(f"Error during streaming: {e}")
             finally:
+                process.kill()
+                process.wait()
+                # os.remove(output_vid)
+                # os.remove(audio_path)
+                print("Streaming process cleaned up")
                 shutil.rmtree(f"{self.avatar_path}/tmp")
                 os.remove(f"{self.avatar_path}/temp.mp4")
                 player.play(rtmp_url)
