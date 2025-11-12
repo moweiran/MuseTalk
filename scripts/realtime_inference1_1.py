@@ -628,7 +628,7 @@ class Avatar:
                 'ffmpeg',
                 '-re',  # Read input at native frame rate (important for streaming)
                 '-thread_queue_size', '4096',
-                '-framerate', str(fps),
+                '-r', str(fps),
                 '-i', output_vid,  # Only input is the complete video file with audio
                 '-c', 'copy',      # Copy streams without re-encoding for better performance
                 '-b:v', '1200k',  # 适当降低码率
@@ -641,12 +641,29 @@ class Avatar:
             ]
 
             print("Combining audio and video...")
-            process = subprocess.Popen(combine_audio_cmd)
-            # Wait for completion
-            process.wait()
-            if os.path.exists(f"{self.avatar_path}/temp.mp4"):
-                os.remove(f"{self.avatar_path}/temp.mp4")
-            player.play(rtmp_url)
+            try:
+                # 使用subprocess替代os.system以获得更好的控制
+                process = subprocess.Popen(combine_audio_cmd, 
+                                        stdout=subprocess.PIPE, 
+                                        stderr=subprocess.PIPE)
+                stdout, stderr = process.communicate()
+                
+                if process.returncode != 0:
+                    print(f"FFmpeg error: {stderr.decode()}")
+                else:
+                    print("Streaming completed successfully")
+                    
+            except Exception as e:
+                print(f"Error during streaming: {e}")
+            finally:
+                # 清理临时文件
+                if os.path.exists(f"{self.avatar_path}/temp.mp4"):
+                    try:
+                        os.remove(f"{self.avatar_path}/temp.mp4")
+                    except Exception as e:
+                        print(f"Failed to remove temp file: {e}")
+                
+                player.play(rtmp_url)
         print("\n")
 
 if __name__ == "__main__":
