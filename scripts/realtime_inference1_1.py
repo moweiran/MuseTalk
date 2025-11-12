@@ -342,30 +342,6 @@ class Avatar:
             concurrent.futures.wait(write_futures)
             executor.shutdown(wait=True)
             print("All images saved")
-
-    # 在开始推流前添加验证
-    def verify_av_sync(self, audio_path, image_pattern, expected_fps):
-        """验证音视频同步"""
-        import glob
-        # 检查图片数量
-        image_files = sorted(glob.glob(image_pattern))
-        image_count = len(image_files)
-        
-        # 获取音频时长
-        import librosa
-        audio_data, sr = librosa.load(audio_path, sr=None)
-        audio_duration = len(audio_data) / sr
-        
-        # 计算预期帧数
-        expected_frames = int(audio_duration * expected_fps)
-        
-        print(f"Image frames: {image_count}, Audio duration: {audio_duration:.2f}s, Expected frames: {expected_frames}")
-        
-        if abs(image_count - expected_frames) > expected_fps:  # 允许1秒误差
-            print("WARNING: Audio and video length mismatch!")
-        
-        return image_count, audio_duration
-
     @torch.no_grad()
     def inference(self, audio_path, out_vid_name, fps, skip_save_images, rtmp_url):
         print(f"Starting pre-stream:")
@@ -440,46 +416,6 @@ class Avatar:
                 time.time() - start_time))
             
             print(f"streaming... avatar_path={self.avatar_path}  audio_path={audio_path}")
-            # 可用 不带音频
-            # stream = f"ffmpeg -re -framerate 25 -f image2 -i {self.avatar_path}/tmp/%08d.png -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -pix_fmt yuv420p -g 30 -b:v 2048k -f flv -flvflags no_duration_filesize rtmp://43.139.227.110:1935/live/livestream"
-            # 可用 带音频
-            # 在您的 inference 方法中替换推流命令,图片，音频流都可以
-            # rtmps://rtmp.icommu.cn/live/livestream test app key and secret
-            # 测试用例
-            # stream = f"ffmpeg -re -framerate 25 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -pix_fmt yuv420p -g 30 -b:v 2048k -c:a aac -b:a 128k -ar 44100 -ac 2 -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize {rtmp_url}"
-           
-            # player.stop()
-            # time.sleep(1)
-            # player2.play(audio_path=audio_path, 
-            #              avatar_path=self.avatar_path, 
-            #              rtmp_url=rtmp_url)
-            # Wait for player to finish using event
-            # print("Waiting for player to finish...")
-            # if player2.wait_for_completion(1):
-            #     print("Player finished normally")
-            # else:
-            #     print("Player timeout or interrupted")
-            #     player2.stop()
-            # player2.stop()
-            
-            
-            # 0.start=============
-            # player.stop()
-            # stream = f"ffmpeg -re -thread_queue_size 512 -framerate 25 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset medium -profile:v baseline -level 4.0 -pix_fmt yuv420p -g 300 -keyint_min 60 -b:v 1200k -maxrate 1200k -bufsize 1800k -c:a aac -ar 16000 -ac 1 -b:a 64k -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize {rtmp_url}"
-            # stream = f"ffmpeg -re -thread_queue_size 512 -framerate 30 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset medium -profile:v baseline -level 3.1 -pix_fmt yuv420p -g 300 -keyint_min 60 -b:v 1200k -maxrate 1200k -bufsize 1800k -s 720x1280 -c:a aac -ar 16000 -ac 1 -b:a 64k -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize {rtmp_url}"
-            # stream = f"ffmpeg -re -thread_queue_size 512 -r 30 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -c:a aac -preset medium -profile:v baseline -level 3.1 -pix_fmt yuv420p -g 300 -b:v 1200k -maxrate 1200k -bufsize 1800k -s 720x1280 -ar 16000 -ac 1 -b:a 64k -f flv -flags +low_delay {rtmp_url}"
-            
-            # os.system(stream)
-            # 0.end=============
-            
-            # 1.start=============
-            # Use subprocess instead of os.system for better control
-            # 在推流前调用验证
-            image_count, audio_duration = self.verify_av_sync(
-                audio_path, 
-                f"{self.avatar_path}/tmp/*.png", 
-                fps
-            )
             player.stop()
             stream_cmd = [
                 'ffmpeg',
@@ -552,38 +488,52 @@ class Avatar:
 
         if out_vid_name is not None and self.skip_save_images is False:
             # optional
-            cmd_img2video = f"ffmpeg -y -v warning -r {fps} -f image2 -i {self.avatar_path}/tmp/%08d.png -vcodec libx264 -vf format=yuv420p -crf 18 {self.avatar_path}/temp.mp4"
+            # cmd_img2video = f"ffmpeg -y -v warning -r {fps} -f image2 -i {self.avatar_path}/tmp/%08d.png -vcodec libx264 -vf format=yuv420p -crf 18 {self.avatar_path}/temp.mp4"
+            cmd_img2video = f"ffmpeg -y -v warning -r {fps} -f image2 -i {self.avatar_path}/tmp/%08d.png -c:v libx264 -preset medium -profile:v baseline -level 3.1 -pix_fmt yuv420p -g 300 -b:v 1200k -keyint_min 60 -maxrate 1200k -bufsize 1800k -s 720x1280 -vf format=yuv420p {self.avatar_path}/temp.mp4"
             print(cmd_img2video)
             os.system(cmd_img2video)
 
             output_vid = os.path.join(self.video_out_path, out_vid_name + ".mp4")  # on
-            cmd_combine_audio = f"ffmpeg -y -v warning -i {audio_path} -i {self.avatar_path}/temp.mp4 {output_vid}"
+            # cmd_combine_audio = f"ffmpeg -y -v warning -i {audio_path} -i {self.avatar_path}/temp.mp4 {output_vid}"
+            cmd_combine_audio = f"ffmpeg -y -v warning -i {audio_path} -i {self.avatar_path}/temp.mp4 -c:a aac -ar 16000 -ac 1 -b:a 64k -shortest {output_vid}"
             print(cmd_combine_audio)
             os.system(cmd_combine_audio)
             
             player.stop()
             # Now we can use simple stream copy for RTMP streaming since the video is already properly encoded
+            # combine_audio_cmd = [
+            #     'ffmpeg',
+            #     '-re',
+            #     '-r', '30',
+            #     '-i', output_vid,
+            #     '-c:v', 'libx264',  # 指定视频编码器
+            #     '-c:a', 'aac',
+            #     '-preset', 'medium',
+            #     '-profile:v', 'baseline',
+            #     '-level', '3.1',
+            #     '-pix_fmt', 'yuv420p',
+            #     '-g', '300',
+            #     '-b:v', '1200k',
+            #     '-maxrate', '1200k',
+            #     '-bufsize', '1800k',
+            #     '-s', '720x1280',
+            #     '-ar', '16000',
+            #     '-ac', '1',
+            #     '-b:a', '64k',
+            #     '-f', 'flv',
+            #     '-flags', '+low_delay',
+            #     rtmp_url
+            # ]
             combine_audio_cmd = [
                 'ffmpeg',
-                '-re',
-                '-r', '30',
-                '-i', output_vid,
-                '-c:v', 'libx264',  # 指定视频编码器
-                '-c:a', 'aac',
-                '-preset', 'medium',
-                '-profile:v', 'baseline',
-                '-level', '3.1',
-                '-pix_fmt', 'yuv420p',
-                '-g', '300',
-                '-b:v', '1200k',
-                '-maxrate', '1200k',
-                '-bufsize', '1800k',
-                '-s', '720x1280',
-                '-ar', '16000',
-                '-ac', '1',
-                '-b:a', '64k',
+                '-y',
+                '-v', 'warning',
+                '-re',  # Read input at native frame rate (important for streaming)
+                '-thread_queue_size', '1024',
+                '-i', output_vid,  # Only input is the complete video file with audio
+                '-c', 'copy',      # Copy streams without re-encoding for better performance
                 '-f', 'flv',
-                '-flags', '+low_delay',
+                '-flvflags', 'no_duration_filesize',
                 rtmp_url
             ]
 
