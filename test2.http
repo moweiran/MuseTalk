@@ -1,3 +1,4 @@
+# 这个是测试借用的GPU服务器的
 @apiHost = http://183.63.45.52:5001
 
 GET {{apiHost}}/hello HTTP/1.1

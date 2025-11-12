@@ -110,6 +110,9 @@ sudo vim /etc/hosts
 
 sudo killall -HUP mDNSResponder
 
+test:
+curl -i https://digitalhuman.richinfo.cn/hello
+
 # Run the service in background with nohup
 
 nohup python fast_api.py > fastapi.log 2>&1 &
