@@ -276,64 +276,6 @@ class Avatar:
 
         torch.save(self.input_latent_list_cycle, os.path.join(self.latents_out_path))
         print("preparing data materials done.")
-        
-    # def process_frame_task(self, res_frame_queue, video_len, skip_save_images, thread_id):
-    #     """
-    #     单个线程处理帧的任务
-    #     """
-    #     while True:
-    #         with self.idx_lock:  # 确保 idx 的线程安全
-    #             if self.idx >= video_len - 1:
-    #                 print(f"Thread-{thread_id}: Finished processing all frames")
-    #                 break
-    #             current_idx = self.idx
-    #             self.idx += 1
-
-    #         try:
-    #             start = time.time()
-    #             res_frame = res_frame_queue.get(block=True, timeout=1)
-    #         except queue.Empty:
-    #             continue
-
-    #         bbox = self.coord_list_cycle[current_idx % len(self.coord_list_cycle)]
-    #         ori_frame = copy.deepcopy(self.frame_list_cycle[current_idx % len(self.frame_list_cycle)])
-    #         x1, y1, x2, y2 = bbox
-    #         try:
-    #             res_frame = cv2.resize(res_frame.astype(np.uint8), (x2 - x1, y2 - y1))
-    #         except Exception as e:
-    #             print(f"Thread-{thread_id}: Error resizing frame: {e}")
-    #             continue
-
-    #         mask = self.mask_list_cycle[current_idx % len(self.mask_list_cycle)]
-    #         mask_crop_box = self.mask_coords_list_cycle[current_idx % len(self.mask_coords_list_cycle)]
-    #         combine_frame = get_image_blending(ori_frame, res_frame, bbox, mask, mask_crop_box)
-    #         print(f"Thread-{thread_id}: Processing frame idx={current_idx}")
-
-    #         if skip_save_images:
-    #             output_path = f"{self.avatar_path}/tmp/{str(current_idx).zfill(8)}.png"
-    #             print(f"Thread-{thread_id}: Saving image {output_path}")
-    #             cv2.imwrite(output_path, combine_frame)
-    # def process_frames(self, res_frame_queue, video_len, skip_save_images):
-    #     """
-    #     多线程处理帧
-    #     """
-    #     print(f'video_len={video_len} skip_save_images={skip_save_images}')
-    #     self.idx = 0
-    #     self.idx_lock = threading.Lock()  # 用于保护 idx 的线程安全
-
-    #     # 创建线程池
-    #     print("cpu with {} threads...".format(os.cpu_count()))
-    #     num_threads = min(32, os.cpu_count() or 1)  # 根据 CPU 核心数或任务量调整线程数
-    #     with ThreadPoolExecutor(max_workers=num_threads) as executor:
-    #         futures = []
-    #         for thread_id in range(num_threads):
-    #             futures.append(executor.submit(self.process_frame_task, res_frame_queue, video_len, skip_save_images, thread_id))
-                
-    #         # 等待所有线程完成
-    #         for future in futures:
-    #             future.result()  # 确保线程完成
-        
-    #     print("All threads have finished processing frames.")
     
     def setup_streaming(self, stream_url, fps, width, height):
         """
@@ -369,11 +311,18 @@ class Avatar:
         
         # Initialize thread pool and futures list for parallel image writing
         import concurrent.futures
+        import multiprocessing
+
+        # Determine optimal number of worker threads based on CPU cores
+        # For I/O bound tasks like image writing, 2-4x CPU cores is typical
+        cpu_count = multiprocessing.cpu_count()
+        max_workers = min(cpu_count * 4, 32)  # Limit to prevent excessive resource usage
+
         executor = None
         write_futures = []
         
         if not skip_save_images:
-            executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
+            executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
             write_futures = []
         
         while True:
@@ -683,8 +632,6 @@ class Avatar:
             # Now we can use simple stream copy for RTMP streaming since the video is already properly encoded
             combine_audio_cmd = [
                 'ffmpeg',
-                '-y',
-                '-v', 'warning',
                 '-re',  # Read input at native frame rate (important for streaming)
                 '-thread_queue_size', '1024',
                 '-i', output_vid,  # Only input is the complete video file with audio
