@@ -1,7 +1,6 @@
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import os
-from omegaconf import OmegaConf
 import numpy as np
 import cv2
 import torch
@@ -30,6 +29,10 @@ import subprocess
 player = Player()  # Global player instance
 # player2 = Player2()
 
+# Global variables for idle streaming management
+idle_stream_process = None
+idle_stream_lock = threading.Lock()
+
 def fast_check_ffmpeg():
     try:
         subprocess.run(["ffmpeg", "-version"], capture_output=True, check=True)
@@ -37,6 +40,63 @@ def fast_check_ffmpeg():
     except:
         return False
 
+def start_idle_stream(rtmp_url, idle_video_path="./data/video/mofei.mp4"):
+    """Start streaming idle video in a loop"""
+    global idle_stream_process
+    
+    with idle_stream_lock:
+        # Stop any existing idle stream
+        stop_idle_stream()
+        
+        # Start new idle stream
+        stream_cmd = [
+            'ffmpeg',
+            '-re',
+            '-stream_loop', '-1',  # Loop indefinitely
+            '-r', '30',
+            '-i', idle_video_path,
+            '-c:v', 'libx264',
+            '-c:a', 'aac',
+            '-preset', 'ultrafast',
+            '-tune', 'zerolatency',
+            '-profile:v', 'baseline',
+            '-level', '3.1',
+            '-pix_fmt', 'yuv420p',
+            '-g', '30',
+            '-b:v', '1200k',
+            '-maxrate', '1200k',
+            '-bufsize', '1800k',
+            '-s', '720x1280',
+            '-ar', '16000',
+            '-ac', '1',
+            '-b:a', '64k',
+            '-f', 'flv',
+            '-flvflags', 'no_duration_filesize',
+            rtmp_url,
+        ]
+        
+        try:
+            idle_stream_process = subprocess.Popen(stream_cmd)
+            print(f"Idle stream started with PID: {idle_stream_process.pid}")
+        except Exception as e:
+            print(f"Error starting idle stream: {e}")
+
+def stop_idle_stream():
+    """Stop the idle video stream"""
+    global idle_stream_process
+    
+    with idle_stream_lock:
+        if idle_stream_process and idle_stream_process.poll() is None:
+            print("Stopping idle stream...")
+            try:
+                idle_stream_process.terminate()
+                idle_stream_process.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                idle_stream_process.kill()
+                idle_stream_process.wait()
+            except Exception as e:
+                print(f"Error stopping idle stream: {e}")
+        idle_stream_process = None
 
 def video2imgs(vid_path, save_path, ext='.png', cut_frame=10000000):
     cap = cv2.VideoCapture(vid_path)
@@ -276,6 +336,35 @@ class Avatar:
 
         torch.save(self.input_latent_list_cycle, os.path.join(self.latents_out_path))
         print("preparing data materials done.")
+    
+    def setup_streaming(self, stream_url, fps, width, height):
+        """
+        设置FFmpeg进程用于实时流媒体传输
+        """
+        print(f"Setting up streaming to {stream_url}")
+        
+        # 启动FFmpeg流媒体进程
+        self.streaming_process = subprocess.Popen([
+            'ffmpeg',
+            '-y',
+            '-f', 'rawvideo',
+            '-vcodec', 'rawvideo',
+            '-s', f'{width}x{height}',
+            '-pix_fmt', 'bgr24',
+            '-r', str(fps),
+            '-i', 'pipe:0',  # 视频输入
+            '-f', 'aac',
+            '-i', 'pipe:1',  # 音频输入
+            '-c:v', 'libx264',
+            '-preset', 'ultrafast',
+            '-tune', 'zerolatency',
+            '-pix_fmt', 'yuv420p',
+            '-c:a', 'aac',
+            '-f', 'flv',
+            stream_url
+        ], stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+        
+        return self.streaming_process
         
     def process_frames(self, res_frame_queue, video_len, skip_save_images):
         print(f'video_len={video_len} skip_save_images={skip_save_images}')
@@ -352,9 +441,14 @@ class Avatar:
         image_count = len(image_files)
         
         # 获取音频时长
-        import librosa
-        audio_data, sr = librosa.load(audio_path, sr=None)
-        audio_duration = len(audio_data) / sr
+        try:
+            import librosa
+            audio_data, sr = librosa.load(audio_path, sr=None)
+            audio_duration = len(audio_data) / sr
+        except ImportError:
+            # Fallback if librosa is not available
+            audio_duration = 0
+            print("Warning: librosa not available, cannot verify audio duration")
         
         # 计算预期帧数
         expected_frames = int(audio_duration * expected_fps)
@@ -368,15 +462,23 @@ class Avatar:
 
     @torch.no_grad()
     def inference(self, audio_path, out_vid_name, fps, skip_save_images, rtmp_url):
-        print(f"Starting pre-stream:")
-        player.play(rtmp_url)
+        print(f"Starting inference with RTMP URL: {rtmp_url}")
+        
+        # Stop idle stream when starting inference
+        stop_idle_stream()
         
         os.makedirs(self.avatar_path + '/tmp', exist_ok=True)
         print(f"start inference self.skip_save_images = {self.skip_save_images} skip_save_images={skip_save_images} rtmp_url = {rtmp_url}")
         ############################################## extract audio feature ##############################################
         start_time = time.time()
         # Extract audio features
-        whisper_input_features, librosa_length = self.audio_processor.get_audio_feature(audio_path, weight_dtype=self.weight_dtype)
+        audio_result = self.audio_processor.get_audio_feature(audio_path, weight_dtype=self.weight_dtype)
+        if isinstance(audio_result, tuple):
+            whisper_input_features, librosa_length = audio_result
+        else:
+            whisper_input_features = audio_result
+            librosa_length = None
+            
         whisper_chunks = self.audio_processor.get_whisper_chunk(
             whisper_input_features,
             self.device,
@@ -426,76 +528,35 @@ class Avatar:
         process_thread.join()
         print(f"processing join2")
         
-        # 关闭流媒体进程
-        # if stream_pipe:
-        #     try:
-        #         stream_pipe.stdin.close()
-        #         stream_pipe.wait()
-        #     except:
-        #         pass
-
         if self.skip_save_images is True:
             print('Total process time of {} frames without saving images = {}s'.format(
                 video_num,
                 time.time() - start_time))
             
             print(f"streaming... avatar_path={self.avatar_path}  audio_path={audio_path}")
-            # 可用 不带音频
-            # stream = f"ffmpeg -re -framerate 25 -f image2 -i {self.avatar_path}/tmp/%08d.png -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -pix_fmt yuv420p -g 30 -b:v 2048k -f flv -flvflags no_duration_filesize rtmp://43.139.227.110:1935/live/livestream"
-            # 可用 带音频
-            # 在您的 inference 方法中替换推流命令,图片，音频流都可以
-            # rtmps://rtmp.icommu.cn/live/livestream test app key and secret
-            # 测试用例
-            # stream = f"ffmpeg -re -framerate 25 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -pix_fmt yuv420p -g 30 -b:v 2048k -c:a aac -b:a 128k -ar 44100 -ac 2 -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize {rtmp_url}"
-           
-            # player.stop()
-            # time.sleep(1)
-            # player2.play(audio_path=audio_path, 
-            #              avatar_path=self.avatar_path, 
-            #              rtmp_url=rtmp_url)
-            # Wait for player to finish using event
-            # print("Waiting for player to finish...")
-            # if player2.wait_for_completion(1):
-            #     print("Player finished normally")
-            # else:
-            #     print("Player timeout or interrupted")
-            #     player2.stop()
-            # player2.stop()
-            
-            
-            # 0.start=============
-            # player.stop()
-            # stream = f"ffmpeg -re -thread_queue_size 512 -framerate 25 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset medium -profile:v baseline -level 4.0 -pix_fmt yuv420p -g 300 -keyint_min 60 -b:v 1200k -maxrate 1200k -bufsize 1800k -c:a aac -ar 16000 -ac 1 -b:a 64k -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize {rtmp_url}"
-            # stream = f"ffmpeg -re -thread_queue_size 512 -framerate 30 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -preset medium -profile:v baseline -level 3.1 -pix_fmt yuv420p -g 300 -keyint_min 60 -b:v 1200k -maxrate 1200k -bufsize 1800k -s 720x1280 -c:a aac -ar 16000 -ac 1 -b:a 64k -map 0:v:0 -map 1:a:0 -shortest -f flv -flvflags no_duration_filesize {rtmp_url}"
-            # stream = f"ffmpeg -re -thread_queue_size 512 -r 30 -f image2 -i {self.avatar_path}/tmp/%08d.png -i {audio_path} -c:v libx264 -c:a aac -preset medium -profile:v baseline -level 3.1 -pix_fmt yuv420p -g 300 -b:v 1200k -maxrate 1200k -bufsize 1800k -s 720x1280 -ar 16000 -ac 1 -b:a 64k -f flv -flags +low_delay {rtmp_url}"
-            
-            # os.system(stream)
-            # 0.end=============
-            
-            # 1.start=============
-            # Use subprocess instead of os.system for better control
             # 在推流前调用验证
             image_count, audio_duration = self.verify_av_sync(
                 audio_path, 
                 f"{self.avatar_path}/tmp/*.png", 
                 fps
             )
-            player.stop()
+            
+            # Stream the generated digital human video
             stream_cmd = [
                 'ffmpeg',
                 '-re',
-                '-thread_queue_size', '1024',  # 增加线程队列大小
-                # '-r', '30',
+                '-thread_queue_size', '1024',
                 '-framerate', str(fps),
                 '-f', 'image2',
                 '-i', f'{self.avatar_path}/tmp/%08d.png',
                 '-i', audio_path,
                 '-c:v', 'libx264',
-                '-preset', 'medium',
+                '-preset', 'ultrafast',
+                '-tune', 'zerolatency',
                 '-profile:v', 'baseline',
                 '-level', '3.1',
                 '-pix_fmt', 'yuv420p',
-                '-g', '300',
+                '-g', '30',
                 '-b:v', '1200k',
                 '-keyint_min', '60',
                 '-maxrate', '1200k',
@@ -515,13 +576,13 @@ class Avatar:
             
             process = None
             try:
-                # Start the ffmpeg process
+                # Start the ffmpeg process for digital human video
                 process = subprocess.Popen(stream_cmd)
                 # Wait for completion
                 process.wait()
-                print("Streaming completed successfully")
+                print("Digital human streaming completed successfully")
             except Exception as e:
-                print(f"Error during streaming: {e}")
+                print(f"Error during digital human streaming: {e}")
             finally:
                 # Ensure process is properly cleaned up
                 if process and process.poll() is None:
@@ -531,19 +592,13 @@ class Avatar:
                     except subprocess.TimeoutExpired:
                         process.kill()
                         process.wait()
-                print("Streaming process cleaned up")
-            # 1.end=======
+                print("Digital human streaming process cleaned up")
             
-            # 2.图片buffer 流模式开始
-            # player.stop()
-            # print(f"Starting pre-stream:")
-            # # Start streaming before processing
-            # if rtmp_url:
-            #     self.stream_frames_from_memory(rtmp_url)
-            # process_thread.join()
-            # 2.图片buffer 流模式开始
+            # Clean up temporary files
             shutil.rmtree(f"{self.avatar_path}/tmp")
-            player.play(rtmp_url)
+            
+            # Resume idle stream after digital human video completes
+            start_idle_stream(rtmp_url)
             
         else:
             print('Total process time of {} frames including saving images = {}s'.format(
@@ -563,7 +618,6 @@ class Avatar:
             os.system(cmd_combine_audio)#改用subprocess来处理
             
             
-            player.stop()
             # Now we can use simple stream copy for RTMP streaming since the video is already properly encoded
             combine_audio_cmd = [
                 'ffmpeg',
@@ -576,7 +630,7 @@ class Avatar:
                 rtmp_url
             ]
 
-            print("Combining audio and video...")
+            print("Streaming digital human video...")
             try:
                 # 使用subprocess替代os.system以获得更好的控制
                 process = subprocess.Popen(combine_audio_cmd, 
@@ -587,10 +641,10 @@ class Avatar:
                 if process.returncode != 0:
                     print(f"FFmpeg error: {stderr.decode()}")
                 else:
-                    print("Streaming completed successfully")
+                    print("Digital human video streaming completed successfully")
                     
             except Exception as e:
-                print(f"Error during streaming: {e}")
+                print(f"Error during digital human video streaming: {e}")
             finally:
                 # 清理临时文件
                 if os.path.exists(f"{self.avatar_path}/temp.mp4"):
@@ -598,7 +652,9 @@ class Avatar:
                         os.remove(f"{self.avatar_path}/temp.mp4")
                     except Exception as e:
                         print(f"Failed to remove temp file: {e}")
-                player.play(rtmp_url)
+                
+                # Resume idle stream after digital human video completes
+                start_idle_stream(rtmp_url)
         print("\n")
 
 if __name__ == "__main__":
