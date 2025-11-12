@@ -61,7 +61,7 @@ class Player:
             print("Stopping process...")
             process.terminate()  # 尝试优雅停止
             try:
-                process.wait(timeout=5)  # 等待进程退出
+                process.wait()  # 等待进程退出
             except subprocess.TimeoutExpired:
                 print("Process did not terminate, killing it...")
                 process.kill()  # 强制停止
