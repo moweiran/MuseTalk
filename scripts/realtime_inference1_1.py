@@ -276,35 +276,6 @@ class Avatar:
 
         torch.save(self.input_latent_list_cycle, os.path.join(self.latents_out_path))
         print("preparing data materials done.")
-    
-    def setup_streaming(self, stream_url, fps, width, height):
-        """
-        设置FFmpeg进程用于实时流媒体传输
-        """
-        print(f"Setting up streaming to {stream_url}")
-        
-        # 启动FFmpeg流媒体进程
-        self.streaming_process = subprocess.Popen([
-            'ffmpeg',
-            '-y',
-            '-f', 'rawvideo',
-            '-vcodec', 'rawvideo',
-            '-s', f'{width}x{height}',
-            '-pix_fmt', 'bgr24',
-            '-r', str(fps),
-            '-i', 'pipe:0',  # 视频输入
-            '-f', 'aac',
-            '-i', 'pipe:1',  # 音频输入
-            '-c:v', 'libx264',
-            '-preset', 'ultrafast',
-            '-tune', 'zerolatency',
-            '-pix_fmt', 'yuv420p',
-            '-c:a', 'aac',
-            '-f', 'flv',
-            stream_url
-        ], stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-        
-        return self.streaming_process
         
     def process_frames(self, res_frame_queue, video_len, skip_save_images):
         print(f'video_len={video_len} skip_save_images={skip_save_images}')
@@ -421,36 +392,6 @@ class Avatar:
         video_num = len(whisper_chunks)
         res_frame_queue = queue.Queue()
         self.idx = 0
-        # 如果启用了流媒体，设置流媒体进程
-        # stream_pipe = None
-        
-        # if rtmp_url:
-        #     # 获取帧尺寸（使用第一帧作为参考）
-        #     sample_frame = self.frame_list_cycle[0]
-        #     height, width = sample_frame.shape[:2]
-        #     print(f"Setting up streaming to {rtmp_url} with frame size {width}x{height}")
-        #     stream_pipe = self.setup_streaming(rtmp_url, fps, width, height)
-            
-        #     # 提取音频数据并发送到流媒体进程
-        #     audio_extract_process = subprocess.Popen([
-        #         'ffmpeg',
-        #         '-i', audio_path,
-        #         '-f', 'aac',
-        #         'pipe:1'
-        #     ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            
-        #     audio_data, _ = audio_extract_process.communicate()
-            
-        #     # 在另一个线程中发送音频数据
-        #     def send_audio_data():
-        #         if stream_pipe:
-        #             try:
-        #                 stream_pipe.stdin.write(audio_data)
-        #             except:
-        #                 pass
-                        
-        #     audio_thread = threading.Thread(target=send_audio_data)
-        #     audio_thread.start()
             
         # Create a sub-thread and start it
         process_thread = threading.Thread(target=self.process_frames, args=(res_frame_queue, video_num, skip_save_images))
