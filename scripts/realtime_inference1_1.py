@@ -627,11 +627,16 @@ class Avatar:
             combine_audio_cmd = [
                 'ffmpeg',
                 '-re',  # Read input at native frame rate (important for streaming)
-                '-thread_queue_size', '1024',
+                '-thread_queue_size', '4096',
+                '-framerate', str(fps),
                 '-i', output_vid,  # Only input is the complete video file with audio
                 '-c', 'copy',      # Copy streams without re-encoding for better performance
+                '-b:v', '1200k',  # 适当降低码率
+                '-bufsize', '1800k',  # 增大缓冲区
+                '-maxrate', '1200k',  # 控制峰值码率
                 '-f', 'flv',
                 '-flvflags', 'no_duration_filesize',
+                '-live', '1',  # 明确指定为直播流
                 rtmp_url
             ]
 
