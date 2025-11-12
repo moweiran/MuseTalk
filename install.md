@@ -123,7 +123,9 @@ echo $!
 
 # Find the process
 
-ps aux | grep fast_api.py
+1. ps aux | grep fast_api.py | grep -v grep
+2. pgrep -f fast_api.py
+3. pidof -x fast_api.py
 
 # Kill it using the process ID
 
@@ -132,6 +134,10 @@ kill -9 <process_id>
 # 查看 log
 
 tail -f fastapi.log
+
+# 检查是否有僵尸进程
+
+ps aux | grep defunct
 
 http://183.63.45.52:5001/inference?url=https://icommu-prod-1326448221.cos.ap-guangzhou.myqcloud.com/asserts/1b829bdcf4f044e497af5a1d8070b6ac.mp3&rtmp_url=rtmps://rtmp.icommu.cn/live/livestream
 

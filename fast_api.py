@@ -84,6 +84,13 @@ def playWelcome(rtmp_url:str):
     player.play(rtmp_url)
     return {"message": "Welcome video is playing."}
 
+@app.get("/welcome/stop")
+def stopWelcome():
+    """
+    停止播放欢迎音
+    """
+    player.stop()
+    return {"message": "Welcome video stopped."}
 
 @app.get("/inference")
 def inference(url:str, rtmp_url:str,filename:str = None):

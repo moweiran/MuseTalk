@@ -559,8 +559,7 @@ class Avatar:
             output_vid = os.path.join(self.video_out_path, out_vid_name + ".mp4")  # on
             cmd_combine_audio = f"ffmpeg -y -v warning -i {audio_path} -i {self.avatar_path}/temp.mp4 {output_vid}"
             print(cmd_combine_audio)
-            os.system(cmd_combine_audio)#改用subprocess来处理
-            
+            os.system(cmd_combine_audio)
             
             player.stop()
             # Now we can use simple stream copy for RTMP streaming since the video is already properly encoded
@@ -604,12 +603,8 @@ class Avatar:
             except Exception as e:
                 print(f"Error during streaming: {e}")
             finally:
-                # 清理临时文件
-                if os.path.exists(f"{self.avatar_path}/temp.mp4"):
-                    try:
-                        os.remove(f"{self.avatar_path}/temp.mp4")
-                    except Exception as e:
-                        print(f"Failed to remove temp file: {e}")
+                shutil.rmtree(f"{self.avatar_path}/tmp")
+                os.remove(f"{self.avatar_path}/temp.mp4")
                 player.play(rtmp_url)
         print("\n")
 
